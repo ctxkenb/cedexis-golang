@@ -84,12 +84,12 @@ func executor(cmd string) {
 
 		tags := strings.Split(command.Args["tags"], ",")
 
-		p := cedexis.NewPublicCloudConfiguredPlatform(shortName, command.Args["name"],
+		p := cedexis.NewPublicCloudPrivatePlatform(shortName, command.Args["name"],
 			command.Args["description"], platformID, tags)
 
 		//fmt.Printf("%#v\n", p)
 
-		p, err = cClient.CreateConfiguredPlatform(p)
+		p, err = cClient.CreatePrivatePlatform(p)
 		if err != nil {
 			fmt.Println(err)
 		}

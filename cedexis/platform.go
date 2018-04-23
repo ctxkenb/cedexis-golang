@@ -66,8 +66,8 @@ type SonarConfig struct {
 	ResponseMatchType    *string `json:"responseMatchType,omitempty"`
 }
 
-// ConfiguredPlatform represents a configured platform
-type ConfiguredPlatform struct {
+// PlatformConfig represents a configured platform
+type PlatformConfig struct {
 	Created                     *string             `json:"created,omitempty"`
 	DisplayName                 *string             `json:"displayName,omitempty"`
 	FusionCustomConfig          *FusionCustomConfig `json:"fusionCustomConfig,omitempty"`
@@ -186,9 +186,9 @@ func (c *Client) GetPlatforms(t PlatformType) ([]*PlatformInfo, error) {
 	return resp, nil
 }
 
-// GetConfiguredPlatforms gets the configured platforms, optionally filtered by tag
-func (c *Client) GetConfiguredPlatforms(tag *string) ([]*ConfiguredPlatform, error) {
-	var resp []*ConfiguredPlatform
+// GetPrivatePlatforms gets the configured platforms, optionally filtered by tag
+func (c *Client) GetPrivatePlatforms(tag *string) ([]*PlatformConfig, error) {
+	var resp []*PlatformConfig
 	err := c.getJSON(baseURL+platformsConfigPath, &resp)
 
 	if err != nil {
@@ -198,9 +198,9 @@ func (c *Client) GetConfiguredPlatforms(tag *string) ([]*ConfiguredPlatform, err
 	return resp, nil
 }
 
-// CreateConfiguredPlatform creates a new platform
-func (c *Client) CreateConfiguredPlatform(spec *ConfiguredPlatform) (*ConfiguredPlatform, error) {
-	var resp ConfiguredPlatform
+// CreatePrivatePlatform creates a new platform
+func (c *Client) CreatePrivatePlatform(spec *PlatformConfig) (*PlatformConfig, error) {
+	var resp PlatformConfig
 	err := c.postJSON(baseURL+platformsConfigPath, spec, &resp)
 
 	if err != nil {
@@ -211,7 +211,7 @@ func (c *Client) CreateConfiguredPlatform(spec *ConfiguredPlatform) (*Configured
 }
 
 //
-// NewPublicCloudConfiguredPlatform simplifies creating a ConfiguredPlatform instance when the platform is hosted
+// NewPublicCloudPrivatePlatform simplifies creating a ConfiguredPlatform instance when the platform is hosted
 // on a known public cloud.
 //
 // The parameters are defined as follows:
@@ -221,12 +221,12 @@ func (c *Client) CreateConfiguredPlatform(spec *ConfiguredPlatform) (*Configured
 //     archetypeID Unique id of the underlying community public cloud platform
 //     tags        Tags to apply to the new platform
 //
-func NewPublicCloudConfiguredPlatform(
+func NewPublicCloudPrivatePlatform(
 	name string,
 	displayName string,
 	description string,
 	archetypeID int,
-	tags []string) *ConfiguredPlatform {
+	tags []string) *PlatformConfig {
 
 	platformid := 1
 	fusionArchetype := "CUSTOM"
@@ -239,7 +239,7 @@ func NewPublicCloudConfiguredPlatform(
 	sonarMethod := "GET"
 	sonarPollIntervalSeconds := 60
 
-	return &ConfiguredPlatform{
+	return &PlatformConfig{
 		Category:                  &NameID{ID: &platformid},
 		DisplayName:               &displayName,
 		FusionArchetype:           &fusionArchetype,
