@@ -174,7 +174,11 @@ func (p *Parser) Suggest(str string) []Suggestion {
 
 			// Spaces break the prompt library
 			if isLast && !wsAtEnd && !strings.Contains(tokens[i], " ") {
-				return []Suggestion{{Text: tokens[i], Description: "<" + arg.Name + "> " + arg.Desc}}
+				if arg.Suggest != nil {
+					return arg.Suggest(tokens[i])
+				} else {
+					return []Suggestion{{Text: tokens[i], Description: "<" + arg.Name + "> " + arg.Desc}}
+				}
 			}
 
 			args[arg.Name] = tokens[i]

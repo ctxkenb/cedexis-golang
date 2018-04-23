@@ -22,6 +22,9 @@ const (
 	// CmdFragList represents the "list" command
 	CmdFragList
 
+	// CmdFragDelete represents the "delete" command
+	CmdFragDelete
+
 	// CmdFragExit represents the "exit" command
 	CmdFragExit
 
@@ -45,6 +48,9 @@ const (
 	// CmdCreateCloudPlatform represents command "create platform cloud"
 	CmdCreateCloudPlatform CommandCode = CommandCode(int(CmdFragCreate | (CmdFragPlatform << 8) | (CmdFragCloud << 16)))
 
+	// CmdDeletePlatform represents command "delete platform <name>"
+	CmdDeletePlatform CommandCode = CommandCode(int(CmdFragDelete | (CmdFragPlatform << 8)))
+
 	// CmdListCommunityPlatforms represents command "list platform public"
 	CmdListCommunityPlatforms CommandCode = CommandCode(int(CmdFragList | (CmdFragPlatform << 8) | (CmdFragPublic << 16)))
 
@@ -58,6 +64,7 @@ const (
 var commandCodeNames = map[CommandCode]string{
 	CmdNone:                   "CmdNone",
 	CmdCreateCloudPlatform:    "CmdCreateCloudPlatform",
+	CmdDeletePlatform:         "CmdDeletePlatform",
 	CmdListCommunityPlatforms: "CmdListPublicPlatforms",
 	CmdListPrivatePlatforms:   "CmdListPrivatePlatforms",
 	CmdExit:                   "CmdExit",
@@ -83,6 +90,14 @@ var commandSpec = map[string]parser.CommandFrag{
 						"tags":   {Desc: "Set tags on the new platform"},
 					}},
 			}},
+		},
+	},
+	"delete": {Desc: "Deletes platforms, etc",
+		Sub: map[string]parser.CommandFrag{
+			"platform": {Desc: "Delete a platform",
+				Code:    int(CmdDeletePlatform),
+				PosArgs: []parser.PosArg{{Name: "name", Desc: "Name of platform", Suggest: suggestPrivatePlatforms}},
+			},
 		},
 	},
 	"list": {Desc: "List platforms, etc",

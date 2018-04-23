@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -31,6 +32,11 @@ func NewClient(ctx context.Context, clientID string, clientSecret string) *Clien
 	}
 }
 
+func (c *Client) delete(url string) error {
+	_, err := c.doHTTP("DELETE", url, nil)
+	return err
+}
+
 func (c *Client) getJSON(url string, recv interface{}) error {
 	return c.doJSON("GET", url, nil, recv)
 }
@@ -48,20 +54,7 @@ func (c *Client) doJSON(method string, url string, send interface{}, recv interf
 		}
 	}
 
-	req, err := http.NewRequest(method, url, toSend)
-	if err != nil {
-		return err
-	}
-
-	if send != nil {
-		req.Header.Set("Content-Type", "application/json; charset=utf-8")
-	}
-	req.Header.Set("User-Agent", "github.com/ctxkenb/cedexis-golang")
-
-	//dump, err := httputil.DumpRequestOut(req, true)
-	//fmt.Printf("%v\n", string(dump))
-
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.doHTTP(method, url, toSend)
 	if err != nil {
 		return err
 	}
@@ -84,4 +77,31 @@ func (c *Client) doJSON(method string, url string, send interface{}, recv interf
 	}
 
 	return nil
+}
+
+func (c *Client) doHTTP(method string, url string, toSend io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest(method, url, toSend)
+	if err != nil {
+		return nil, err
+	}
+
+	if toSend != nil {
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	}
+	req.Header.Set("User-Agent", "github.com/ctxkenb/cedexis-golang")
+
+	//dump, err := httputil.DumpRequestOut(req, true)
+	//fmt.Printf("%v\n", string(dump))
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode >= 300 {
+		//dump, err = httputil.DumpResponse(resp, true)
+		//fmt.Printf("%v\n", string(dump))
+		return nil, fmt.Errorf("Call to Cedexis failed, error code %v", resp.StatusCode)
+	}
+
+	return resp, nil
 }

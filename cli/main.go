@@ -96,6 +96,23 @@ func executor(cmd string) {
 
 		// reset cache
 		platforms = map[cedexis.PlatformType][]*cedexis.PlatformInfo{}
+	} else if command.Code == int(CmdDeletePlatform) {
+		availPlatforms := getPlatforms(cedexis.PlatformsTypePrivate, nil)
+		platformID := -1
+		for _, p := range availPlatforms {
+			if *p.Name == command.Args["name"] {
+				platformID = *p.ID
+			}
+		}
+		if platformID == -1 {
+			fmt.Printf("Platform '%v' not found\n", command.Args["name"])
+			return
+		}
+
+		cClient.DeletePrivatePlatform(platformID)
+
+		// reset cache
+		platforms = map[cedexis.PlatformType][]*cedexis.PlatformInfo{}
 	}
 
 }

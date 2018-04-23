@@ -1,5 +1,7 @@
 package cedexis
 
+import "fmt"
+
 const platformsConfigPath = "/config/platforms.json"
 const platformsReportingPath = "/reporting/platforms.json"
 const providerCategoriesPath = "/config/platforms.json/providerCategories"
@@ -208,6 +210,11 @@ func (c *Client) CreatePrivatePlatform(spec *PlatformConfig) (*PlatformConfig, e
 	}
 
 	return &resp, nil
+}
+
+// DeletePrivatePlatform removes a platform
+func (c *Client) DeletePrivatePlatform(id int) error {
+	return c.delete(baseURL + platformsConfigPath + "/" + fmt.Sprintf("%d", id))
 }
 
 //
