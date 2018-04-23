@@ -188,7 +188,7 @@ func (c *Client) GetPlatforms(t PlatformType) ([]*PlatformInfo, error) {
 	return resp, nil
 }
 
-// GetEnabledPlatforms gets the configured platforms, optionally filtered by tag
+// GetEnabledPlatforms gets the avalable platforms, optionally filtered by tag
 func (c *Client) GetEnabledPlatforms(tag *string) ([]*PlatformConfig, error) {
 	var resp []*PlatformConfig
 	err := c.getJSON(baseURL+platformsConfigPath, &resp)
