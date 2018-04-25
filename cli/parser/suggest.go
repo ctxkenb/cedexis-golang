@@ -33,6 +33,7 @@ func argSuggestions(args map[string]NamedArg) []Suggestion {
 	return result
 }
 
+// FilterHasPrefix filters out suggestions without the given prefix
 func FilterHasPrefix(suggestions []Suggestion, prefix string, ignoreCase bool) []Suggestion {
 	result := make([]Suggestion, 0, len(suggestions))
 
@@ -54,11 +55,12 @@ func FilterHasPrefix(suggestions []Suggestion, prefix string, ignoreCase bool) [
 	return result
 }
 
-func FilterContains(suggestions []Suggestion, prefix string, ignoreCase bool) []Suggestion {
+// FilterContains filters out suggestions that don't contain str
+func FilterContains(suggestions []Suggestion, str string, ignoreCase bool) []Suggestion {
 	result := make([]Suggestion, 0, len(suggestions))
 
 	if ignoreCase {
-		lowerPrefix := strings.ToLower(prefix)
+		lowerPrefix := strings.ToLower(str)
 		for _, s := range suggestions {
 			if strings.Contains(strings.ToLower(s.Text), lowerPrefix) {
 				result = append(result, s)
@@ -66,7 +68,7 @@ func FilterContains(suggestions []Suggestion, prefix string, ignoreCase bool) []
 		}
 	} else {
 		for _, s := range suggestions {
-			if strings.Contains(s.Text, prefix) {
+			if strings.Contains(s.Text, str) {
 				result = append(result, s)
 			}
 		}
