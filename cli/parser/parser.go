@@ -176,9 +176,9 @@ func (p *Parser) Suggest(str string) []Suggestion {
 			if isLast && !wsAtEnd && !strings.Contains(tokens[i], " ") {
 				if arg.Suggest != nil {
 					return arg.Suggest(tokens[i])
-				} else {
-					return []Suggestion{{Text: tokens[i], Description: "<" + arg.Name + "> " + arg.Desc}}
 				}
+
+				return []Suggestion{{Text: tokens[i], Description: "<" + arg.Name + "> " + arg.Desc}}
 			}
 
 			args[arg.Name] = tokens[i]
