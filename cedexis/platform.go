@@ -54,18 +54,18 @@ type NameID struct {
 
 // SonarConfig represents the sonar configuration for a platform
 type SonarConfig struct {
-	Enabled              *bool   `json:"enabled,omitempty"`
-	URL                  *string `json:"url,omitempty"`
-	PollInterviewSeconds *int    `json:"pollIntervalSeconds,omitempty"`
-	Timeout              *int    `json:"timeout,omitempty"`
-	Method               *string `json:"method,omitempty"`
-	IgnoreSSLErrors      *bool   `json:"ignoreSSLErrors,omitempty"`
-	MaintenanceMode      *bool   `json:"maintenanceMode,omitempty"`
-	Host                 *string `json:"host,omitempty"`
-	Market               *string `json:"market,omitempty"`
-	RequestContentType   *string `json:"requestContentType,omitempty"`
-	ResponseBodyMatch    *string `json:"responseBodyMatch,omitempty"`
-	ResponseMatchType    *string `json:"responseMatchType,omitempty"`
+	Enabled             *bool   `json:"enabled,omitempty"`
+	URL                 *string `json:"url,omitempty"`
+	PollIntervalSeconds *int    `json:"pollIntervalSeconds,omitempty"`
+	Timeout             *int    `json:"timeout,omitempty"`
+	Method              *string `json:"method,omitempty"`
+	IgnoreSSLErrors     *bool   `json:"ignoreSSLErrors,omitempty"`
+	MaintenanceMode     *bool   `json:"maintenanceMode,omitempty"`
+	Host                *string `json:"host,omitempty"`
+	Market              *string `json:"market,omitempty"`
+	RequestContentType  *string `json:"requestContentType,omitempty"`
+	ResponseBodyMatch   *string `json:"responseBodyMatch,omitempty"`
+	ResponseMatchType   *string `json:"responseMatchType,omitempty"`
 }
 
 // PlatformConfig represents a configured platform
@@ -262,8 +262,8 @@ func NewPublicCloudPrivatePlatform(
 			UsePublicData:     &radarUsePublicData,
 		},
 		SonarConfig: &SonarConfig{
-			Method:               &sonarMethod,
-			PollInterviewSeconds: &sonarPollIntervalSeconds,
+			Method:              &sonarMethod,
+			PollIntervalSeconds: &sonarPollIntervalSeconds,
 		},
 		Tags: &tags,
 	}
