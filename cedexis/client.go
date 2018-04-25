@@ -14,6 +14,20 @@ import (
 
 const baseURL = "https://portal.cedexis.com/api/v2"
 
+type cedexisError struct {
+	DeveloperMessage string `json:"developerMessage"`
+	UserMessage      string `json:"userMessage"`
+	Field            string `json:"field"`
+	ErrorCode        string `json:"errorCode"`
+	MoreInfo         string `json:"moreInfo"`
+	RootCause        string `json:"rootCause"`
+}
+
+type cedexisErrorResponse struct {
+	HTTPStatus   int            `json:"httpStatus"`
+	ErrorDetails []cedexisError `json:"errorDetails"`
+}
+
 // Client implements a client for the Cedexis API
 type Client struct {
 	httpClient *http.Client
@@ -58,11 +72,6 @@ func (c *Client) doJSON(method string, url string, send interface{}, recv interf
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode >= 300 {
-		//dump, err = httputil.DumpResponse(resp, true)
-		//fmt.Printf("%v\n", string(dump))
-		return fmt.Errorf("Call to Cedexis failed, error code %v", resp.StatusCode)
-	}
 
 	defer resp.Body.Close()
 
@@ -97,11 +106,27 @@ func (c *Client) doHTTP(method string, url string, toSend io.Reader) (*http.Resp
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode >= 300 {
-		//dump, err = httputil.DumpResponse(resp, true)
-		//fmt.Printf("%v\n", string(dump))
-		return nil, fmt.Errorf("Call to Cedexis failed, error code %v", resp.StatusCode)
+	if resp.StatusCode >= 400 {
+		//		dump, _ := httputil.DumpResponse(resp, true)
+		//		fmt.Printf("%v\n", string(dump))
+		return nil, errorFromHTTPFailure(resp)
 	}
 
 	return resp, nil
+}
+
+func errorFromHTTPFailure(resp *http.Response) error {
+	defer resp.Body.Close()
+	body, errErr := ioutil.ReadAll(resp.Body)
+	if errErr != nil {
+		return fmt.Errorf("Call to Cedexis failed, error code %v", resp.StatusCode)
+	}
+
+	cedexisError := cedexisErrorResponse{}
+	errErr = json.Unmarshal(body, &cedexisError)
+	if errErr != nil {
+		return fmt.Errorf("Call to Cedexis failed, error code %v", resp.StatusCode)
+	}
+
+	return fmt.Errorf("Call to Cedexis failed, because '%s'", cedexisError.ErrorDetails[0].UserMessage)
 }
