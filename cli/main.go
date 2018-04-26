@@ -109,7 +109,10 @@ func executor(cmd string) {
 			return
 		}
 
-		cClient.DeletePrivatePlatform(platformID)
+		err = cClient.DeletePrivatePlatform(platformID)
+		if err != nil {
+			fmt.Println(err)
+		}
 
 		// reset cache
 		platforms = map[cedexis.PlatformType][]*cedexis.PlatformInfo{}
