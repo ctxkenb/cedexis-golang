@@ -32,3 +32,14 @@ func suggestPlatforms(s string, t cedexis.PlatformType, category *cedexis.Platfo
 
 	return parser.FilterContains(result, s, true)
 }
+
+func suggestSonarMarket(s string) []parser.Suggestion {
+	result := []parser.Suggestion{
+		{Text: string(cedexis.MarketGlobal), Description: "Global"},
+		{Text: string(cedexis.MarketAsia), Description: "Asia Pacific"},
+		{Text: string(cedexis.MarketEurope), Description: "Europe"},
+		{Text: string(cedexis.MarketNorthAmerica), Description: "North America"},
+	}
+
+	return parser.FilterHasPrefix(result, s, true)
+}

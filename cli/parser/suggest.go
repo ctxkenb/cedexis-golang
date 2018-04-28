@@ -1,6 +1,9 @@
 package parser
 
-import "strings"
+import (
+	"sort"
+	"strings"
+)
 
 // Suggestion is a recommended auto-complete for the user
 type Suggestion struct {
@@ -19,7 +22,7 @@ func cmdSuggestions(cmds map[string]CommandFrag) []Suggestion {
 		result[i].Description = v.Desc
 		i++
 	}
-	return result
+	return sortSuggestions(result)
 }
 
 func argSuggestions(args map[string]NamedArg) []Suggestion {
@@ -30,7 +33,7 @@ func argSuggestions(args map[string]NamedArg) []Suggestion {
 		result[i].Description = v.Desc
 		i++
 	}
-	return result
+	return sortSuggestions(result)
 }
 
 // FilterHasPrefix filters out suggestions without the given prefix
@@ -75,4 +78,12 @@ func FilterContains(suggestions []Suggestion, str string, ignoreCase bool) []Sug
 	}
 
 	return result
+}
+
+func sortSuggestions(suggestions []Suggestion) []Suggestion {
+	sort.Slice(suggestions, func(i, j int) bool {
+		return suggestions[i].Text < suggestions[j].Text
+	})
+
+	return suggestions
 }

@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
-	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
@@ -50,7 +51,7 @@ func executor(cmd string) {
 				break
 			}
 
-			if filter, ok := command.Args["filter"]; ok {
+			if filter, ok := command.Args[argFilter]; ok {
 				platforms, err = filterPlatforms(platforms, filter)
 			}
 
@@ -64,48 +65,45 @@ func executor(cmd string) {
 
 		t.Print(os.Stdout, w)
 	} else if command.Code == int(CmdCreateCloudPlatform) {
-		shortName := command.Args["shortName"]
+		shortName := command.Args[argShortName]
 		if shortName == "" {
-			shortName = strings.Replace(command.Args["name"], " ", "_", -1)
+			shortName = strings.Replace(command.Args[argName], " ", "_", -1)
 		}
 
 		cat := cedexis.PlatformCategoryCloudComputing
-		availPlatforms := getPlatforms(cedexis.PlatformsTypeCommunity, &cat)
-		platformID := -1
-		for _, p := range availPlatforms {
-			if *p.Name == command.Args["region"] {
-				platformID = *p.ID
-			}
-		}
-		if platformID == -1 {
-			fmt.Printf("Region '%v' not found\n", command.Args["region"])
+		platformID, err := getPlatformID(command.Args[argRegion], cedexis.PlatformsTypeCommunity, &cat)
+		if err != nil {
+			fmt.Println(err)
 			return
 		}
 
-		tags := strings.Split(command.Args["tags"], ",")
+		tags := strings.Split(command.Args[argTags], ",")
 
-		p := cedexis.NewPublicCloudPrivatePlatform(shortName, command.Args["name"],
-			command.Args["description"], platformID, tags)
+		p := cedexis.NewPublicCloudPrivatePlatform(shortName, command.Args[argName],
+			command.Args[argDescription], platformID, tags)
 
-		//fmt.Printf("%#v\n", p)
+		p.SonarConfig, err = parseSonarConfig(command.Args)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		if p.SonarConfig.Enabled != nil && *p.SonarConfig.Enabled == true && p.SonarConfig.URL == nil {
+			fmt.Println("Error: Sonar requires URL to be enabled")
+			return
+		}
 
 		p, err = cClient.CreatePrivatePlatform(p)
 		if err != nil {
 			fmt.Println(err)
+			return
 		}
 
-		// reset cache
-		platforms = map[cedexis.PlatformType][]*cedexis.PlatformInfo{}
+		resetCache()
 	} else if command.Code == int(CmdDeletePlatform) {
-		availPlatforms := getPlatforms(cedexis.PlatformsTypePrivate, nil)
-		platformID := -1
-		for _, p := range availPlatforms {
-			if *p.Name == command.Args["name"] {
-				platformID = *p.ID
-			}
-		}
-		if platformID == -1 {
-			fmt.Printf("Platform '%v' not found\n", command.Args["name"])
+		platformID, err := getPlatformID(command.Args[argName], cedexis.PlatformsTypePrivate, nil)
+		if err != nil {
+			fmt.Println(err)
 			return
 		}
 
@@ -114,46 +112,112 @@ func executor(cmd string) {
 			fmt.Println(err)
 		}
 
-		// reset cache
-		platforms = map[cedexis.PlatformType][]*cedexis.PlatformInfo{}
+		resetCache()
 	}
 
 }
 
-func filterPlatforms(platforms []*cedexis.PlatformInfo, filter string) ([]*cedexis.PlatformInfo, error) {
-	if filter == "" {
-		return platforms, nil
-	}
-
-	re, err := regexp.Compile(filter)
+func parseSonarConfig(vars map[string]string) (*cedexis.SonarConfig, error) {
+	sonarEnabled, err := parseBool(vars[argSonarEnabled])
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]*cedexis.PlatformInfo, 0, len(platforms))
-	for _, p := range platforms {
-		if re.MatchString(*p.Name) {
-			result = append(result, p)
-		}
+	sonarURL, err := parseURL(vars[argSonarURL])
+	if err != nil {
+		return nil, err
 	}
-	return result, nil
+
+	sonarPollInterval, err := parseInt(vars[argSonarPollInterval])
+	if err != nil {
+		return nil, err
+	}
+
+	sonarTimeout, err := parseInt(vars[argSonarPollInterval])
+	if err != nil {
+		return nil, err
+	}
+
+	sonarIgnoreSSLErrors, err := parseBool(vars[argSonarIgnoreSSLErrors])
+	if err != nil {
+		return nil, err
+	}
+
+	sonarMaintenanceMode, err := parseBool(vars[argSonarMaintenanceMode])
+	if err != nil {
+		return nil, err
+	}
+
+	sonarMethod := stringOrNil(vars[argSonarMethod])
+	if sonarMethod == nil {
+		val := "GET"
+		sonarMethod = &val
+	}
+
+	sonarHost := stringOrNil(vars[argSonarHost])
+	sonarMarket := stringOrNil(vars[argSonarMarket])
+	sonarRequestContentType := stringOrNil(vars[argSonarRequestContentType])
+	sonarResponseBodyMatch := stringOrNil(vars[argSonarResponseBodyMatch])
+	sonarResponseMatchType := stringOrNil(vars[argSonarResponseMatchType])
+
+	return &cedexis.SonarConfig{
+		Enabled:             sonarEnabled,
+		URL:                 sonarURL,
+		PollIntervalSeconds: sonarPollInterval,
+		Timeout:             sonarTimeout,
+		Method:              sonarMethod,
+		IgnoreSSLErrors:     sonarIgnoreSSLErrors,
+		MaintenanceMode:     sonarMaintenanceMode,
+		Host:                sonarHost,
+		Market:              sonarMarket,
+		RequestContentType:  sonarRequestContentType,
+		ResponseBodyMatch:   sonarResponseBodyMatch,
+		ResponseMatchType:   sonarResponseMatchType,
+	}, nil
 }
 
-func platformsToTable(platforms []*cedexis.PlatformInfo) *Table {
-	t := Table{
-		Columns: []string{"Name", "ID", "Category", "Alias"},
-		Rows:    make([][]string, len(platforms)),
+func stringOrNil(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func parseBool(s string) (*bool, error) {
+	if s == "" {
+		return nil, nil
+	}
+	b, err := strconv.ParseBool(s)
+	return &b, err
+}
+
+func parseURL(s string) (*string, error) {
+	if s == "" {
+		return nil, nil
+	}
+	_, err := url.ParseRequestURI(s)
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+func parseInt(s string) (*int, error) {
+	if s == "" {
+		return nil, nil
+	}
+	i64, err := strconv.ParseInt(s, 10, 32)
+	if err != nil {
+		return nil, err
 	}
 
-	for i, p := range platforms {
-		archeType := ""
-		if p.AliasedPlatform != nil && p.AliasedPlatform.Name != nil {
-			archeType = *p.AliasedPlatform.Name
-		}
-		t.Rows[i] = []string{*p.Name, fmt.Sprintf("%d", *p.ID), *p.Category.Name, archeType}
-	}
+	i := int(i64)
 
-	return &t
+	return &i, nil
+}
+
+func resetCache() {
+	platforms = map[cedexis.PlatformType][]*cedexis.PlatformInfo{}
 }
 
 var cClient *cedexis.Client

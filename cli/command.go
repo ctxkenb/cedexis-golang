@@ -74,20 +74,53 @@ func (c CommandCode) String() string {
 	return commandCodeNames[c]
 }
 
+const (
+	argName                    string = "name"
+	argShortName               string = "shortName"
+	argDescription             string = "description"
+	argFilter                  string = "filter"
+	argRegion                  string = "region"
+	argTags                    string = "tags"
+	argSonarEnabled            string = "sonarEnabled"
+	argSonarURL                string = "sonarURL"
+	argSonarPollInterval       string = "sonarPollInterval"
+	argSonarTimeout            string = "sonarTimeout"
+	argSonarMethod             string = "sonarMethod"
+	argSonarIgnoreSSLErrors    string = "sonarIgnoreSSLErrors"
+	argSonarMaintenanceMode    string = "sonarMaintenanceMode"
+	argSonarHost               string = "sonarHost"
+	argSonarMarket             string = "sonarMarket"
+	argSonarRequestContentType string = "sonarRequestContentType"
+	argSonarResponseBodyMatch  string = "sonarResponseBodyMatch"
+	argSonarResponseMatchType  string = "sonarResponseMatchType"
+)
+
 var commandSpec = map[string]parser.CommandFrag{
 	"create": {Desc: "Creates platforms, etc",
 		Args: map[string]parser.NamedArg{
-			"shortName":   {Desc: "Set the shortname"},
-			"description": {Desc: "Set the description"},
+			argShortName:   {Desc: "Set the shortname"},
+			argDescription: {Desc: "Set the description"},
 		},
 		Sub: map[string]parser.CommandFrag{
 			"platform": {Desc: "Create a new platform", Sub: map[string]parser.CommandFrag{
 				"cloud": {Desc: "New public cloud platform",
 					Code:    int(CmdCreateCloudPlatform),
-					PosArgs: []parser.PosArg{{Name: "name", Desc: "Name of platform"}},
+					PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of platform"}},
 					Args: map[string]parser.NamedArg{
-						"region": {Desc: "Set the public cloud region", Suggest: suggestCloudPlatforms},
-						"tags":   {Desc: "Set tags on the new platform"},
+						argRegion:                  {Desc: "Set the public cloud region", Suggest: suggestCloudPlatforms},
+						argTags:                    {Desc: "Set tags on the new platform"},
+						argSonarEnabled:            {Desc: "Enable sonar health-checks"},
+						argSonarURL:                {Desc: "URL to check"},
+						argSonarPollInterval:       {Desc: "Seconds between checks"},
+						argSonarTimeout:            {Desc: "Timeout for health-check"},
+						argSonarMethod:             {Desc: "HTTP method for health-check"},
+						argSonarIgnoreSSLErrors:    {Desc: "Accept invalid SSL certs"},
+						argSonarMaintenanceMode:    {Desc: "Force state down to Openmix"},
+						argSonarHost:               {Desc: "Override host from URL"},
+						argSonarMarket:             {Desc: "Source for health-checks", Suggest: suggestSonarMarket},
+						argSonarRequestContentType: {Desc: "Request Content-Type header"},
+						argSonarResponseBodyMatch:  {Desc: "Any string"},
+						argSonarResponseMatchType:  {Desc: "Pass vs fail based on body match"},
 					}},
 			}},
 		},
@@ -96,12 +129,12 @@ var commandSpec = map[string]parser.CommandFrag{
 		Sub: map[string]parser.CommandFrag{
 			"platform": {Desc: "Delete a platform",
 				Code:    int(CmdDeletePlatform),
-				PosArgs: []parser.PosArg{{Name: "name", Desc: "Name of platform", Suggest: suggestPrivatePlatforms}},
+				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of platform", Suggest: suggestPrivatePlatforms}},
 			},
 		},
 	},
 	"list": {Desc: "List platforms, etc",
-		Args: map[string]parser.NamedArg{"filter": {Desc: "Regex filter"}},
+		Args: map[string]parser.NamedArg{argFilter: {Desc: "Regex filter"}},
 		Sub: map[string]parser.CommandFrag{
 			"platform": {Desc: "List platforms", Sub: map[string]parser.CommandFrag{
 				"community": {Desc: "List community platforms", Code: int(CmdListCommunityPlatforms)},
