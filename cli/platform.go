@@ -67,17 +67,22 @@ func platformsToTable(platforms []*cedexis.PlatformInfo) *Table {
 }
 
 func getPlatformID(name string, t cedexis.PlatformType, c *cedexis.PlatformCategory) (int, error) {
+	p, err := getPlatform(name, t, c)
+	if err != nil {
+		return 0, err
+	}
+
+	return *p.ID, nil
+}
+
+func getPlatform(name string, t cedexis.PlatformType, c *cedexis.PlatformCategory) (*cedexis.PlatformInfo, error) {
 	availPlatforms := getPlatforms(t, c)
-	platformID := -1
 
 	for _, p := range availPlatforms {
 		if *p.Name == name {
-			platformID = *p.ID
+			return p, nil
 		}
 	}
-	if platformID == -1 {
-		return 0, fmt.Errorf("platform '%v' not found", name)
-	}
 
-	return platformID, nil
+	return nil, fmt.Errorf("platform '%v' not found", name)
 }

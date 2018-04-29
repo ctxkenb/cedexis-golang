@@ -22,6 +22,9 @@ const (
 	// CmdFragList represents the "list" command
 	CmdFragList
 
+	// CmdFragShow represents the "show" command
+	CmdFragShow
+
 	// CmdFragDelete represents the "delete" command
 	CmdFragDelete
 
@@ -56,6 +59,9 @@ const (
 
 	// CmdListPrivatePlatforms represents command "list platform private"
 	CmdListPrivatePlatforms CommandCode = CommandCode(int(CmdFragList | (CmdFragPlatform << 8) | (CmdFragPrivate << 16)))
+
+	// CmdShowPlatform represents command "show platform"
+	CmdShowPlatform CommandCode = CommandCode(int(CmdFragShow | (CmdFragPlatform << 8)))
 
 	// CmdExit represents "exit" command
 	CmdExit CommandCode = CommandCode(int(CmdFragExit))
@@ -140,6 +146,14 @@ var commandSpec = map[string]parser.CommandFrag{
 				"community": {Desc: "List community platforms", Code: int(CmdListCommunityPlatforms)},
 				"private":   {Desc: "List private platforms", Code: int(CmdListPrivatePlatforms)},
 			}},
+		},
+	},
+	"show": {Desc: "Show details",
+		Sub: map[string]parser.CommandFrag{
+			"platform": {Desc: "Show platform",
+				Code:    int(CmdShowPlatform),
+				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of platform", Suggest: suggestPrivatePlatforms}},
+			},
 		},
 	},
 	"exit": {Desc: "Exit", Code: int(CmdExit)},

@@ -217,6 +217,13 @@ func (c *Client) DeletePrivatePlatform(id int) error {
 	return c.delete(baseURL + platformsConfigPath + "/" + fmt.Sprintf("%d", id))
 }
 
+// GetPrivatePlatform gets a platform by ID
+func (c *Client) GetPrivatePlatform(id int) (*PlatformConfig, error) {
+	var cfg *PlatformConfig
+	err := c.getJSON(baseURL+platformsConfigPath+"/"+fmt.Sprintf("%d", id), &cfg)
+	return cfg, err
+}
+
 //
 // NewPublicCloudPrivatePlatform simplifies creating a ConfiguredPlatform instance when the platform is hosted
 // on a known public cloud.

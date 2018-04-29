@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -64,6 +65,30 @@ func executor(cmd string) {
 		}
 
 		t.Print(os.Stdout, w)
+	} else if (command.Code & 0xff) == int(CmdFragShow) {
+		var obj interface{}
+		if (command.Code>>8)&0xff == int(CmdFragPlatform) {
+			pID, err := getPlatformID(command.Args[argName], cedexis.PlatformsTypeAll, nil)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			obj, err = cClient.GetPrivatePlatform(pID)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+		}
+
+		data, err := json.MarshalIndent(obj, "", "  ")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		fmt.Println(string(data))
+
 	} else if command.Code == int(CmdCreateCloudPlatform) {
 		shortName := command.Args[argShortName]
 		if shortName == "" {
