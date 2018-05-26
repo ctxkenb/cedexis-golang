@@ -34,6 +34,9 @@ const (
 	// CmdFragPlatform represents the "xxx platform xxx" sub-command
 	CmdFragPlatform
 
+	// CmdFragAlert represents the "xxx alert xxx" sub-command
+	CmdFragAlert
+
 	// CmdFragCloud represents the "xxx xxx cloud" sub-command
 	CmdFragCloud
 
@@ -63,6 +66,9 @@ const (
 	// CmdShowPlatform represents command "show platform"
 	CmdShowPlatform CommandCode = CommandCode(int(CmdFragShow | (CmdFragPlatform << 8)))
 
+	// CmdListAlerts represents command "list alert"
+	CmdListAlerts CommandCode = CommandCode(int(CmdFragList | (CmdFragAlert << 8)))
+
 	// CmdExit represents "exit" command
 	CmdExit CommandCode = CommandCode(int(CmdFragExit))
 )
@@ -73,6 +79,7 @@ var commandCodeNames = map[CommandCode]string{
 	CmdDeletePlatform:         "CmdDeletePlatform",
 	CmdListCommunityPlatforms: "CmdListPublicPlatforms",
 	CmdListPrivatePlatforms:   "CmdListPrivatePlatforms",
+	CmdListAlerts:             "CmdListAlerts",
 	CmdExit:                   "CmdExit",
 }
 
@@ -146,6 +153,7 @@ var commandSpec = map[string]parser.CommandFrag{
 				"community": {Desc: "List community platforms", Code: int(CmdListCommunityPlatforms)},
 				"private":   {Desc: "List private platforms", Code: int(CmdListPrivatePlatforms)},
 			}},
+			"alert": {Desc: "List alerts", Code: int(CmdListAlerts)},
 		},
 	},
 	"show": {Desc: "Show details",

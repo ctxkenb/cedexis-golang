@@ -50,6 +50,9 @@ func executor(cmd string) {
 			case CmdListPrivatePlatforms:
 				platforms = getPlatforms(cedexis.PlatformsTypePrivate, nil)
 				break
+			default:
+				fmt.Println("Unrecognized command: " + commandCodeNames[CommandCode(command.Code)])
+				return
 			}
 
 			if filter, ok := command.Args[argFilter]; ok {
@@ -57,6 +60,17 @@ func executor(cmd string) {
 			}
 
 			t = platformsToTable(platforms)
+		} else if ((command.Code >> 8) & 0xff) == int(CmdFragAlert) {
+			alerts, err := getAlerts()
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			t = alertsToTable(alerts)
+		} else {
+			fmt.Println("Unrecognized command: " + commandCodeNames[CommandCode(command.Code)])
+			return
 		}
 
 		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
