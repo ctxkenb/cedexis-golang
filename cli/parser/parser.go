@@ -8,9 +8,13 @@ import (
 // Command represents a parsed command and all arguments
 type Command struct {
 	// Code is a unique identifier for a command, zero is reserved and must not be used
-	Code int
-	Args map[string]string
+	Code    int
+	Args    map[string]string
+	Handler HandlerFn
 }
+
+// HandlerFn handles a command
+type HandlerFn func(c *Command)
 
 // CommandFrag specifies a fragment of a command.
 //
@@ -25,6 +29,7 @@ type CommandFrag struct {
 	Sub     map[string]CommandFrag
 	Args    map[string]NamedArg
 	Code    int
+	Handler HandlerFn
 }
 
 // PosArg specifies a positional argument, found immediately after the command itself.
@@ -69,6 +74,7 @@ func (p *Parser) ParseCommand(str string) (*Command, error) {
 	args := map[string]string{}
 	namedArg := ""
 	possibleArgs := map[string]NamedArg{}
+	handler := HandlerFn(nil)
 	for i := range tokens {
 
 		if ptr.Code == 0 {
@@ -84,6 +90,10 @@ func (p *Parser) ParseCommand(str string) (*Command, error) {
 			// Accumulate all possible named args
 			for k, v := range ptr.Args {
 				possibleArgs[k] = v
+			}
+
+			if ptr.Handler != nil {
+				handler = ptr.Handler
 			}
 
 		} else if len(args) < len(ptr.PosArgs) {
@@ -127,8 +137,9 @@ func (p *Parser) ParseCommand(str string) (*Command, error) {
 
 	if ptr.Code != 0 {
 		return &Command{
-			Code: ptr.Code,
-			Args: args,
+			Code:    ptr.Code,
+			Args:    args,
+			Handler: handler,
 		}, nil
 	}
 
@@ -146,7 +157,7 @@ func (p *Parser) Suggest(str string) []Suggestion {
 
 	ptr := CommandFrag{Sub: p.Spec}
 	args := map[string]string{}
-	namedArg := ""
+	argName := ""
 	possibleArgs := map[string]NamedArg{}
 	for i := range tokens {
 		isLast := i == len(tokens)-1
@@ -182,23 +193,25 @@ func (p *Parser) Suggest(str string) []Suggestion {
 			}
 
 			args[arg.Name] = tokens[i]
-		} else if namedArg == "" {
-			namedArg = strings.TrimLeft(tokens[i], "-")
+		} else if argName == "" {
+			argName = strings.TrimLeft(tokens[i], "-")
 
-			_, ok := possibleArgs[namedArg]
+			namedArg, ok := possibleArgs[argName]
 			if isLast && !ok {
 				return FilterHasPrefix(argSuggestions(possibleArgs), tokens[i], true)
 			}
 
-			if ok && possibleArgs[namedArg].Flag {
-				delete(possibleArgs, namedArg)
-				namedArg = ""
+			if ok && namedArg.Flag {
+				delete(possibleArgs, argName)
+				argName = ""
+			} else if ok && isLast && wsAtEnd && namedArg.Suggest != nil {
+				return namedArg.Suggest("")
 			}
 		} else {
 			if isLast && !wsAtEnd {
 				// Spaces break the prompt library
 				if !strings.Contains(tokens[i], " ") {
-					arg, ok := possibleArgs[namedArg]
+					arg, ok := possibleArgs[argName]
 
 					if ok && arg.Suggest != nil {
 						return arg.Suggest(tokens[i])
@@ -211,10 +224,10 @@ func (p *Parser) Suggest(str string) []Suggestion {
 			}
 
 			// Prevent this named arg from being suggested, since it's been used
-			delete(possibleArgs, namedArg)
+			delete(possibleArgs, argName)
 
-			args[namedArg] = tokens[i]
-			namedArg = ""
+			args[argName] = tokens[i]
+			argName = ""
 		}
 	}
 
@@ -228,12 +241,12 @@ func (p *Parser) Suggest(str string) []Suggestion {
 			return []Suggestion{{Text: "", Description: "<" + arg.Name + "> " + arg.Desc}}
 		}
 
-		if namedArg == "" {
+		if argName == "" {
 			return argSuggestions(possibleArgs)
 		} else if len(args) >= len(ptr.PosArgs) {
-			arg, ok := possibleArgs[namedArg]
+			arg, ok := possibleArgs[argName]
 			if ok {
-				return []Suggestion{{Text: "", Description: "<" + namedArg + "> " + arg.Desc}}
+				return []Suggestion{{Text: "", Description: "<" + argName + "> " + arg.Desc}}
 			}
 		}
 	}
