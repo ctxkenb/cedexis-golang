@@ -43,3 +43,44 @@ func suggestSonarMarket(s string) []parser.Suggestion {
 
 	return parser.FilterHasPrefix(result, s, true)
 }
+
+func suggestAlertTypes(s string) []parser.Suggestion {
+	result := []parser.Suggestion{
+		{Text: cedexis.AlertTypeRadar.String(), Description: "Radar"},
+		{Text: cedexis.AlertTypeSonar.String(), Description: "Sonar"},
+	}
+
+	return parser.FilterHasPrefix(result, s, true)
+}
+
+func suggestAlertChange(s string) []parser.Suggestion {
+	result := []parser.Suggestion{
+		{Text: cedexis.AlertChangeAny.String(), Description: "Any"},
+		{Text: cedexis.AlertChangeToUp.String(), Description: "down-->up"},
+		{Text: cedexis.AlertChangeToDown.String(), Description: "up-->down"},
+	}
+
+	return parser.FilterHasPrefix(result, s, true)
+}
+
+func suggestAlertTiming(s string) []parser.Suggestion {
+	result := []parser.Suggestion{
+		{Text: cedexis.AlertTimingBoth.String(), Description: "Immediate and summary"},
+		{Text: cedexis.AlertTimingImmediate.String(), Description: "Immediate only"},
+		{Text: cedexis.AlertTimingSummary.String(), Description: "Summary only"},
+	}
+
+	return parser.FilterHasPrefix(result, s, true)
+}
+
+func suggestAlertInterval(s string) []parser.Suggestion {
+	result := []parser.Suggestion{
+		{Text: "5", Description: "5 minutes"},
+		{Text: "10", Description: "10 minutes"},
+		{Text: "15", Description: "15 minutes"},
+		{Text: "30", Description: "30 minutes"},
+		{Text: "60", Description: "1 hour"},
+	}
+
+	return parser.FilterHasPrefix(result, s, true)
+}

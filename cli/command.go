@@ -66,6 +66,9 @@ const (
 	// CmdShowPlatform represents command "show platform"
 	CmdShowPlatform CommandCode = CommandCode(int(CmdFragShow | (CmdFragPlatform << 8)))
 
+	// CmdCreateAlert represents commdn "create alert"
+	CmdCreateAlert CommandCode = CommandCode(int(CmdFragCreate | (CmdFragAlert << 8)))
+
 	// CmdListAlerts represents command "list alert"
 	CmdListAlerts CommandCode = CommandCode(int(CmdFragList | (CmdFragAlert << 8)))
 
@@ -79,6 +82,7 @@ var commandCodeNames = map[CommandCode]string{
 	CmdDeletePlatform:         "CmdDeletePlatform",
 	CmdListCommunityPlatforms: "CmdListPublicPlatforms",
 	CmdListPrivatePlatforms:   "CmdListPrivatePlatforms",
+	CmdCreateAlert:            "CmdCreateAlert",
 	CmdListAlerts:             "CmdListAlerts",
 	CmdExit:                   "CmdExit",
 }
@@ -106,10 +110,16 @@ const (
 	argSonarRequestContentType string = "sonarRequestContentType"
 	argSonarResponseBodyMatch  string = "sonarResponseBodyMatch"
 	argSonarResponseMatchType  string = "sonarResponseMatchType"
+	argType                    string = "type"
+	argPlatform                string = "platform"
+	argChange                  string = "change"
+	argEmails                  string = "emails"
+	argTiming                  string = "timing"
+	argInterval                string = "interval"
 )
 
 var commandSpec = map[string]parser.CommandFrag{
-	"create": {Desc: "Creates platforms, etc",
+	"create": {Desc: "Creates platforms, alerts, etc",
 		Args: map[string]parser.NamedArg{
 			argShortName:   {Desc: "Set the shortname"},
 			argDescription: {Desc: "Set the description"},
@@ -118,6 +128,7 @@ var commandSpec = map[string]parser.CommandFrag{
 			"platform": {Desc: "Create a new platform", Sub: map[string]parser.CommandFrag{
 				"cloud": {Desc: "New public cloud platform",
 					Code:    int(CmdCreateCloudPlatform),
+					Handler: handleCreatePlatform,
 					PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of platform"}},
 					Args: map[string]parser.NamedArg{
 						argRegion:                  {Desc: "Set the public cloud region", Suggest: suggestCloudPlatforms},
@@ -136,18 +147,33 @@ var commandSpec = map[string]parser.CommandFrag{
 						argSonarResponseMatchType:  {Desc: "Pass vs fail based on body match"},
 					}},
 			}},
+			"alert": {Desc: "Create a new alert",
+				Code:    int(CmdCreateAlert),
+				Handler: handleCreateAlert,
+				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of alert"}},
+				Args: map[string]parser.NamedArg{
+					argType:     {Desc: "The alert type", Suggest: suggestAlertTypes},
+					argPlatform: {Desc: "Name of the platform", Suggest: suggestPrivatePlatforms},
+					argChange:   {Desc: "Event triggering alert", Suggest: suggestAlertChange},
+					argEmails:   {Desc: "Notification targets"},
+					argTiming:   {Desc: "Summary or immediate notification", Suggest: suggestAlertTiming},
+					argInterval: {Desc: "Alert gap (in minutes)", Suggest: suggestAlertInterval},
+				},
+			},
 		},
 	},
-	"delete": {Desc: "Deletes platforms, etc",
+	"delete": {Desc: "Deletes platforms, alerts, etc",
 		Sub: map[string]parser.CommandFrag{
 			"platform": {Desc: "Delete a platform",
+				Handler: handleDeletePlatform,
 				Code:    int(CmdDeletePlatform),
 				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of platform", Suggest: suggestPrivatePlatforms}},
 			},
 		},
 	},
-	"list": {Desc: "List platforms, etc",
-		Args: map[string]parser.NamedArg{argFilter: {Desc: "Regex filter"}},
+	"list": {Desc: "List platforms, alerts, etc",
+		Handler: handleList,
+		Args:    map[string]parser.NamedArg{argFilter: {Desc: "Regex filter"}},
 		Sub: map[string]parser.CommandFrag{
 			"platform": {Desc: "List platforms", Sub: map[string]parser.CommandFrag{
 				"community": {Desc: "List community platforms", Code: int(CmdListCommunityPlatforms)},
@@ -157,6 +183,7 @@ var commandSpec = map[string]parser.CommandFrag{
 		},
 	},
 	"show": {Desc: "Show details",
+		Handler: handleShow,
 		Sub: map[string]parser.CommandFrag{
 			"platform": {Desc: "Show platform",
 				Code:    int(CmdShowPlatform),

@@ -38,122 +38,180 @@ func executor(cmd string) {
 		os.Exit(0)
 	}
 
-	if (command.Code & 0xff) == int(CmdFragList) {
-		var t *Table
+	if command.Handler != nil {
+		command.Handler(command)
+		return
+	}
 
-		if ((command.Code >> 8) & 0xff) == int(CmdFragPlatform) {
-			var platforms []*cedexis.PlatformInfo
-			switch CommandCode(command.Code) {
-			case CmdListCommunityPlatforms:
-				platforms = getPlatforms(cedexis.PlatformsTypeCommunity, nil)
-				break
-			case CmdListPrivatePlatforms:
-				platforms = getPlatforms(cedexis.PlatformsTypePrivate, nil)
-				break
-			default:
-				fmt.Println("Unrecognized command: " + commandCodeNames[CommandCode(command.Code)])
-				return
-			}
+	fmt.Printf("No handler for command %s\n", CommandCode(command.Code).String())
+}
 
-			if filter, ok := command.Args[argFilter]; ok {
-				platforms, err = filterPlatforms(platforms, filter)
-			}
+func handleCreatePlatform(command *parser.Command) {
+	shortName := command.Args[argShortName]
+	if shortName == "" {
+		shortName = strings.Replace(command.Args[argName], " ", "_", -1)
+	}
 
-			t = platformsToTable(platforms)
-		} else if ((command.Code >> 8) & 0xff) == int(CmdFragAlert) {
-			alerts, err := getAlerts()
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
+	cat := cedexis.PlatformCategoryCloudComputing
+	platformID, err := getPlatformID(command.Args[argRegion], cedexis.PlatformsTypeCommunity, &cat)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-			t = alertsToTable(alerts)
-		} else {
+	tags := strings.Split(command.Args[argTags], ",")
+
+	p := cedexis.NewPublicCloudPrivatePlatform(shortName, command.Args[argName],
+		command.Args[argDescription], platformID, tags)
+
+	p.SonarConfig, err = parseSonarConfig(command.Args)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	if p.SonarConfig.Enabled != nil && *p.SonarConfig.Enabled == true && p.SonarConfig.URL == nil {
+		fmt.Println("Error: Sonar requires URL to be enabled")
+		return
+	}
+
+	p, err = cClient.CreatePrivatePlatform(p)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	resetCache()
+}
+
+func handleCreateAlert(command *parser.Command) {
+
+	alertType, err := cedexis.ParseAlertType(command.Args[argType])
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	platformID, err := getPlatformID(command.Args[argPlatform], cedexis.PlatformsTypePrivate, nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	change, err := cedexis.ParseAlertChange(command.Args[argChange])
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	timing, err := cedexis.ParseAlertTiming(command.Args[argTiming])
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	emails := strings.Split(command.Args[argEmails], ",")
+
+	intervalMins, err := parseInt(command.Args[argInterval])
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	interval := 5 * 60
+	if intervalMins != nil {
+		interval = (*intervalMins) * 60
+	}
+
+	err = cClient.CreateAlert(command.Args[argName], alertType, platformID, change, timing, emails, interval)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+}
+
+func handleList(command *parser.Command) {
+	var t *Table
+	var err error
+
+	if ((command.Code >> 8) & 0xff) == int(CmdFragPlatform) {
+		var platforms []*cedexis.PlatformInfo
+		switch CommandCode(command.Code) {
+		case CmdListCommunityPlatforms:
+			platforms = getPlatforms(cedexis.PlatformsTypeCommunity, nil)
+			break
+		case CmdListPrivatePlatforms:
+			platforms = getPlatforms(cedexis.PlatformsTypePrivate, nil)
+			break
+		default:
 			fmt.Println("Unrecognized command: " + commandCodeNames[CommandCode(command.Code)])
 			return
 		}
 
-		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
-		if err != nil || w == 0 {
-			w = 80
+		if filter, ok := command.Args[argFilter]; ok {
+			platforms, err = filterPlatforms(platforms, filter)
 		}
 
-		t.Print(os.Stdout, w)
-	} else if (command.Code & 0xff) == int(CmdFragShow) {
-		var obj interface{}
-		if (command.Code>>8)&0xff == int(CmdFragPlatform) {
-			pID, err := getPlatformID(command.Args[argName], cedexis.PlatformsTypeAll, nil)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			obj, err = cClient.GetPrivatePlatform(pID)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		}
-
-		data, err := json.MarshalIndent(obj, "", "  ")
+		t = platformsToTable(platforms)
+	} else if ((command.Code >> 8) & 0xff) == int(CmdFragAlert) {
+		alerts, err := getAlerts()
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 
-		fmt.Println(string(data))
-
-	} else if command.Code == int(CmdCreateCloudPlatform) {
-		shortName := command.Args[argShortName]
-		if shortName == "" {
-			shortName = strings.Replace(command.Args[argName], " ", "_", -1)
-		}
-
-		cat := cedexis.PlatformCategoryCloudComputing
-		platformID, err := getPlatformID(command.Args[argRegion], cedexis.PlatformsTypeCommunity, &cat)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		tags := strings.Split(command.Args[argTags], ",")
-
-		p := cedexis.NewPublicCloudPrivatePlatform(shortName, command.Args[argName],
-			command.Args[argDescription], platformID, tags)
-
-		p.SonarConfig, err = parseSonarConfig(command.Args)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		if p.SonarConfig.Enabled != nil && *p.SonarConfig.Enabled == true && p.SonarConfig.URL == nil {
-			fmt.Println("Error: Sonar requires URL to be enabled")
-			return
-		}
-
-		p, err = cClient.CreatePrivatePlatform(p)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		resetCache()
-	} else if command.Code == int(CmdDeletePlatform) {
-		platformID, err := getPlatformID(command.Args[argName], cedexis.PlatformsTypePrivate, nil)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		err = cClient.DeletePrivatePlatform(platformID)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		resetCache()
+		t = alertsToTable(alerts)
+	} else {
+		fmt.Println("Unrecognized command: " + commandCodeNames[CommandCode(command.Code)])
+		return
 	}
 
+	w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+	if err != nil || w == 0 {
+		w = 80
+	}
+
+	t.Print(os.Stdout, w)
+}
+
+func handleShow(command *parser.Command) {
+	var obj interface{}
+	if (command.Code>>8)&0xff == int(CmdFragPlatform) {
+		pID, err := getPlatformID(command.Args[argName], cedexis.PlatformsTypeAll, nil)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		obj, err = cClient.GetPrivatePlatform(pID)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}
+
+	data, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(string(data))
+}
+
+func handleDeletePlatform(command *parser.Command) {
+	platformID, err := getPlatformID(command.Args[argName], cedexis.PlatformsTypePrivate, nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = cClient.DeletePrivatePlatform(platformID)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resetCache()
 }
 
 func parseSonarConfig(vars map[string]string) (*cedexis.SonarConfig, error) {
