@@ -2,6 +2,7 @@ package cedexis
 
 import (
 	"fmt"
+	"strings"
 )
 
 const alertsConfigPath = "/config/alerts.json"
@@ -26,12 +27,12 @@ type Alert struct {
 	Peers             *[]int    `json:"peers,omitempty"`
 	EventsLast24Hours *int      `json:"eventsLast24Hours,omitempty"`
 	CountryEvents     *[]int    `json:"countryEvents,omitempty"`
-	ASNEvents         *[]int    `json:"asnEvents"`
-	RefererURI        *string   `json:"refererUri"`
-	Statistic         *string   `json:"statistic"`
-	DataSource        *string   `json:"dataSource"`
-	AutoFill          *int      `json:"autoFill"`
-	NotifyChange      *string   `json:"notifyChange"`
+	ASNEvents         *[]int    `json:"asnEvents,omitempty"`
+	RefererURI        *string   `json:"refererUri,omitempty"`
+	Statistic         *string   `json:"statistic,omitempty"`
+	DataSource        *string   `json:"dataSource,omitempty"`
+	AutoFill          *int      `json:"autoFill,omitempty"`
+	NotifyChange      *string   `json:"notifyChange,omitempty"`
 }
 
 // AlertType is the type of alert.
@@ -39,7 +40,7 @@ type AlertType int
 
 const (
 	// AlertTypeSonar indicates the alert is triggered by Sonar
-	AlertTypeSonar = iota
+	AlertTypeSonar AlertType = iota
 
 	// AlertTypeRadar indicates the alert is triggered by Radar
 	AlertTypeRadar
@@ -50,7 +51,7 @@ type AlertChange int
 
 const (
 	// AlertChangeAny alerts on up and down events.
-	AlertChangeAny = iota
+	AlertChangeAny AlertChange = iota
 
 	// AlertChangeToUp alerts on up events.
 	AlertChangeToUp
@@ -64,7 +65,7 @@ type AlertTiming int
 
 const (
 	// AlertTimingImmediate triggers the alert immediately.
-	AlertTimingImmediate = iota
+	AlertTimingImmediate AlertTiming = iota
 
 	// AlertTimingSummary triggers the alert as a daily summary.
 	AlertTimingSummary
@@ -84,6 +85,18 @@ func (at AlertType) String() string {
 	}
 }
 
+// ParseAlertType parses an alert type 'sonar' or 'radar' to enum value
+func ParseAlertType(val string) (AlertType, error) {
+	switch strings.ToLower(val) {
+	case "sonar":
+		return AlertTypeSonar, nil
+	case "radar":
+		return AlertTypeRadar, nil
+	default:
+		return 0, fmt.Errorf("Invalid alert type '%s'", val)
+	}
+}
+
 func (c AlertChange) String() string {
 	switch c {
 	case AlertChangeAny:
@@ -94,6 +107,20 @@ func (c AlertChange) String() string {
 		return "DOWN"
 	default:
 		return fmt.Sprintf("<unknown %d>", int(c))
+	}
+}
+
+// ParseAlertChange parses an alert type 'any','up' or 'down' to enum value
+func ParseAlertChange(val string) (AlertChange, error) {
+	switch strings.ToLower(val) {
+	case "any":
+		return AlertChangeAny, nil
+	case "up":
+		return AlertChangeToUp, nil
+	case "down":
+		return AlertChangeToDown, nil
+	default:
+		return 0, fmt.Errorf("Invalid alert change '%s'", val)
 	}
 }
 
@@ -110,6 +137,20 @@ func (t AlertTiming) String() string {
 	}
 }
 
+// ParseAlertTiming parses an alert type 'immediate','summary' or 'both' to enum value
+func ParseAlertTiming(val string) (AlertTiming, error) {
+	switch strings.ToLower(val) {
+	case "immediate":
+		return AlertTimingImmediate, nil
+	case "summary":
+		return AlertTimingSummary, nil
+	case "both":
+		return AlertTimingBoth, nil
+	default:
+		return 0, fmt.Errorf("Invalid alert timing '%s'", val)
+	}
+}
+
 // CreateAlert creates new alerts.
 func (c *Client) CreateAlert(name string, t AlertType, platform int,
 	change AlertChange, timing AlertTiming, emails []string, minInterval int) error {
@@ -117,15 +158,23 @@ func (c *Client) CreateAlert(name string, t AlertType, platform int,
 	atype := t.String()
 	achange := change.String()
 	atiming := timing.String()
+	zero := 0
+	operator := "GT"
+	peers := []int{}
+	locations := []string{}
 
 	alert := Alert{
-		Name:         &name,
-		Type:         &atype,
-		Platform:     &platform,
-		NotifyChange: &achange,
-		Timing:       &atiming,
-		Emails:       &emails,
-		Debounce:     &minInterval,
+		Name:            &name,
+		Type:            &atype,
+		Platform:        &platform,
+		NotifyChange:    &achange,
+		Timing:          &atiming,
+		Emails:          &emails,
+		Debounce:        &minInterval,
+		ProbeType:       &zero,
+		CompareOperator: &operator,
+		Peers:           &peers,
+		Locations:       &locations,
 	}
 
 	return c.postJSON(baseURL+alertsConfigPath, &alert, nil)
