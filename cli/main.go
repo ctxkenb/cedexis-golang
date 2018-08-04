@@ -61,31 +61,25 @@ func handleCreatePlatform(command *parser.Command) {
 
 	tags := strings.Split(command.Args[argTags], ",")
 
-	p := cedexis.NewPublicCloudPrivatePlatform(shortName, command.Args[argName],
-		command.Args[argDescription], platformID, tags)
-
-	p.SonarConfig, err = parseSonarConfig(command.Args)
+	sonar, err := parseSonarConfig(command.Args)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	if p.SonarConfig.Enabled != nil && *p.SonarConfig.Enabled == true && p.SonarConfig.URL == nil {
+	if sonar.Enabled != nil && *sonar.Enabled == true && sonar.URL == nil {
 		fmt.Println("Error: Sonar requires URL to be enabled")
 		return
 	}
 
-	p, err = cClient.CreatePrivatePlatform(p)
+	err = createPlatform(command.Args[argName], shortName, command.Args[argDescription], platformID, tags, sonar)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
-	resetCache()
 }
 
 func handleCreateAlert(command *parser.Command) {
-
 	alertType, err := cedexis.ParseAlertType(command.Args[argType])
 	if err != nil {
 		fmt.Println(err)
@@ -123,7 +117,7 @@ func handleCreateAlert(command *parser.Command) {
 		interval = (*intervalMins) * 60
 	}
 
-	err = cClient.CreateAlert(command.Args[argName], alertType, platformID, change, timing, emails, interval)
+	err = createAlert(command.Args[argName], alertType, platformID, change, timing, emails, interval)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -207,18 +201,17 @@ func handleShow(command *parser.Command) {
 }
 
 func handleDeletePlatform(command *parser.Command) {
-	platformID, err := getPlatformID(command.Args[argName], cedexis.PlatformsTypePrivate, nil)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	err = cClient.DeletePrivatePlatform(platformID)
+	err := deletePlatform(command.Args[argName], cedexis.PlatformsTypePrivate)
 	if err != nil {
 		fmt.Println(err)
 	}
+}
 
-	resetCache()
+func handleDeleteAlert(command *parser.Command) {
+	err := deleteAlert(command.Args[argName])
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func parseSonarConfig(vars map[string]string) (*cedexis.SonarConfig, error) {
@@ -320,12 +313,7 @@ func parseInt(s string) (*int, error) {
 	return &i, nil
 }
 
-func resetCache() {
-	platforms = map[cedexis.PlatformType][]*cedexis.PlatformInfo{}
-}
-
 var cClient *cedexis.Client
-var platforms = map[cedexis.PlatformType][]*cedexis.PlatformInfo{}
 
 var cliParser = parser.New(commandSpec)
 

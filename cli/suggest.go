@@ -44,6 +44,20 @@ func suggestSonarMarket(s string) []parser.Suggestion {
 	return parser.FilterHasPrefix(result, s, true)
 }
 
+func suggestAlerts(s string) []parser.Suggestion {
+	alerts, err := getAlerts()
+	if err != nil {
+		return nil
+	}
+
+	result := make([]parser.Suggestion, 0, len(alerts))
+	for _, a := range alerts {
+		result = append(result, parser.Suggestion{Text: "\"" + *a.Name + "\""})
+	}
+
+	return parser.FilterContains(result, s, true)
+}
+
 func suggestAlertTypes(s string) []parser.Suggestion {
 	result := []parser.Suggestion{
 		{Text: cedexis.AlertTypeRadar.String(), Description: "Radar"},

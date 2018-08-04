@@ -7,6 +7,12 @@ import (
 	"github.com/ctxkenb/cedexis-golang/cedexis"
 )
 
+func resetPlatformCache() {
+	platforms = map[cedexis.PlatformType][]*cedexis.PlatformInfo{}
+}
+
+var platforms = map[cedexis.PlatformType][]*cedexis.PlatformInfo{}
+
 func getPlatforms(t cedexis.PlatformType, category *cedexis.PlatformCategory) []*cedexis.PlatformInfo {
 	if platforms[t] == nil {
 		var err error
@@ -85,4 +91,33 @@ func getPlatform(name string, t cedexis.PlatformType, c *cedexis.PlatformCategor
 	}
 
 	return nil, fmt.Errorf("platform '%v' not found", name)
+}
+
+func createPlatform(name string, shortName string, description string, archeType int, tags []string, sonar *cedexis.SonarConfig) error {
+	p := cedexis.NewPublicCloudPrivatePlatform(shortName, name, description, archeType, tags)
+	p.SonarConfig = sonar
+
+	var err error
+	p, err = cClient.CreatePrivatePlatform(p)
+	if err != nil {
+		return err
+	}
+
+	resetPlatformCache()
+	return nil
+}
+
+func deletePlatform(name string, t cedexis.PlatformType) error {
+	platformID, err := getPlatformID(name, t, nil)
+	if err != nil {
+		return err
+	}
+
+	err = cClient.DeletePrivatePlatform(platformID)
+	if err != nil {
+		return err
+	}
+
+	resetPlatformCache()
+	return nil
 }

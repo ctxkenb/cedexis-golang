@@ -43,6 +43,26 @@ func getAlert(name string) (*cedexis.Alert, error) {
 	return nil, nil
 }
 
+func createAlert(name string, t cedexis.AlertType, platform int, change cedexis.AlertChange, timing cedexis.AlertTiming, emails []string, intervalSecs int) error {
+	err := cClient.CreateAlert(name, t, platform, change, timing, emails, intervalSecs)
+	if err != nil {
+		return err
+	}
+
+	alerts = nil
+	return nil
+}
+
+func deleteAlert(name string) error {
+	a, err := getAlert(name)
+	if err != nil {
+		return err
+	}
+
+	alerts = nil
+	return cClient.DeleteAlert(*a.ID)
+}
+
 func alertsToTable(alerts []*cedexis.Alert) *Table {
 	t := Table{
 		Columns: []string{"Name", "Enabled", "Platform"},

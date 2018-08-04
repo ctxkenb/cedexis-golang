@@ -69,6 +69,9 @@ const (
 	// CmdCreateAlert represents commdn "create alert"
 	CmdCreateAlert CommandCode = CommandCode(int(CmdFragCreate | (CmdFragAlert << 8)))
 
+	// CmdDeleteAlert represents commdn "delete alert"
+	CmdDeleteAlert CommandCode = CommandCode(int(CmdFragDelete | (CmdFragAlert << 8)))
+
 	// CmdListAlerts represents command "list alert"
 	CmdListAlerts CommandCode = CommandCode(int(CmdFragList | (CmdFragAlert << 8)))
 
@@ -87,6 +90,7 @@ var commandCodeNames = map[CommandCode]string{
 	CmdListPrivatePlatforms:   "CmdListPrivatePlatforms",
 	CmdShowPlatform:           "CmdShowPlatform",
 	CmdCreateAlert:            "CmdCreateAlert",
+	CmdDeleteAlert:            "CmdDeleteAlert",
 	CmdListAlerts:             "CmdListAlerts",
 	CmdShowAlert:              "CmdShowAlert",
 	CmdExit:                   "CmdExit",
@@ -174,16 +178,22 @@ var commandSpec = map[string]parser.CommandFrag{
 				Code:    int(CmdDeletePlatform),
 				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of platform", Suggest: suggestPrivatePlatforms}},
 			},
+			"alert": {Desc: "Delete an alert",
+				Handler: handleDeleteAlert,
+				Code:    int(CmdDeleteAlert),
+				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of alert", Suggest: suggestAlerts}},
+			},
 		},
 	},
 	"list": {Desc: "List platforms, alerts, etc",
 		Handler: handleList,
-		Args:    map[string]parser.NamedArg{argFilter: {Desc: "Regex filter"}},
 		Sub: map[string]parser.CommandFrag{
-			"platform": {Desc: "List platforms", Sub: map[string]parser.CommandFrag{
-				"community": {Desc: "List community platforms", Code: int(CmdListCommunityPlatforms)},
-				"private":   {Desc: "List private platforms", Code: int(CmdListPrivatePlatforms)},
-			}},
+			"platform": {Desc: "List platforms",
+				Args: map[string]parser.NamedArg{argFilter: {Desc: "Regex filter"}},
+				Sub: map[string]parser.CommandFrag{
+					"community": {Desc: "List community platforms", Code: int(CmdListCommunityPlatforms)},
+					"private":   {Desc: "List private platforms", Code: int(CmdListPrivatePlatforms)},
+				}},
 			"alert": {Desc: "List alerts", Code: int(CmdListAlerts)},
 		},
 	},
@@ -196,7 +206,7 @@ var commandSpec = map[string]parser.CommandFrag{
 			},
 			"alert": {Desc: "Show alert",
 				Code:    int(CmdShowAlert),
-				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of alert"}},
+				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of alert", Suggest: suggestAlerts}},
 			},
 		},
 	},
