@@ -175,6 +175,7 @@ func handleList(command *parser.Command) {
 }
 
 func handleShow(command *parser.Command) {
+	var err error
 	var obj interface{}
 	if (command.Code>>8)&0xff == int(CmdFragPlatform) {
 		pID, err := getPlatformID(command.Args[argName], cedexis.PlatformsTypeAll, nil)
@@ -184,6 +185,12 @@ func handleShow(command *parser.Command) {
 		}
 
 		obj, err = cClient.GetPrivatePlatform(pID)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	} else if (command.Code>>8)&0xff == int(CmdFragAlert) {
+		obj, err = getAlert(command.Args[argName])
 		if err != nil {
 			fmt.Println(err)
 			return

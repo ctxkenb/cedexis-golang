@@ -180,6 +180,21 @@ func (c *Client) CreateAlert(name string, t AlertType, platform int,
 	return c.postJSON(baseURL+alertsConfigPath, &alert, nil)
 }
 
+// GetAlert gets an alert.
+func (c *Client) GetAlert(id int) (*Alert, error) {
+	result := Alert{}
+	err := c.getJSON(baseURL+alertsConfigPath+fmt.Sprintf("/%d", id), &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, err
+}
+
+// DeleteAlert deletes an alert.
+func (c *Client) DeleteAlert(id int) error {
+	return c.delete(baseURL + alertsConfigPath + fmt.Sprintf("/%d", id))
+}
+
 // GetAlerts returns all configured alerts.
 func (c *Client) GetAlerts() ([]*Alert, error) {
 	var resp []*Alert

@@ -72,6 +72,9 @@ const (
 	// CmdListAlerts represents command "list alert"
 	CmdListAlerts CommandCode = CommandCode(int(CmdFragList | (CmdFragAlert << 8)))
 
+	// CmdShowAlert reprsents command "show alert"
+	CmdShowAlert CommandCode = CommandCode(int(CmdFragShow | (CmdFragAlert << 8)))
+
 	// CmdExit represents "exit" command
 	CmdExit CommandCode = CommandCode(int(CmdFragExit))
 )
@@ -82,8 +85,10 @@ var commandCodeNames = map[CommandCode]string{
 	CmdDeletePlatform:         "CmdDeletePlatform",
 	CmdListCommunityPlatforms: "CmdListPublicPlatforms",
 	CmdListPrivatePlatforms:   "CmdListPrivatePlatforms",
+	CmdShowPlatform:           "CmdShowPlatform",
 	CmdCreateAlert:            "CmdCreateAlert",
 	CmdListAlerts:             "CmdListAlerts",
+	CmdShowAlert:              "CmdShowAlert",
 	CmdExit:                   "CmdExit",
 }
 
@@ -188,6 +193,10 @@ var commandSpec = map[string]parser.CommandFrag{
 			"platform": {Desc: "Show platform",
 				Code:    int(CmdShowPlatform),
 				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of platform", Suggest: suggestPrivatePlatforms}},
+			},
+			"alert": {Desc: "Show alert",
+				Code:    int(CmdShowAlert),
+				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of alert"}},
 			},
 		},
 	},
