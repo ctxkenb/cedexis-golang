@@ -3,7 +3,7 @@ package cedexis
 const appsConfigPath = "/config/applications/dns.json"
 
 const (
-	ApplicationTypeJavascriptV1  = "JS_V1"
+	ApplicationTypeJavascriptV1  = "V1_JS"
 	ApplicationTypeOptimalRTT    = "RT_HTTP_PERFORMANCE"
 	ApplicationTypeFailover      = "STATIC_FAILOVER"
 	ApplicationTypeRoundRobin    = "RR_PURE_WEIGHTED"
