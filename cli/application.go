@@ -1,13 +1,35 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/ctxkenb/cedexis-golang/cedexis"
 )
 
 var apps *map[int]*cedexis.Application
+
+func createApp(name string, description string, t string, fallbackName string, availabilityThreshold int, targetPlatform int, targetCname string, useSonar bool) error {
+	apps = nil
+
+	return cClient.CreateApplication(name, description, t, fallbackName, availabilityThreshold, []cedexis.ApplicationPlatform{
+		{
+			ID:           &targetPlatform,
+			Cname:        &targetCname,
+			SonarEnabled: &useSonar,
+		},
+	})
+}
+
+func deleteApp(name string) error {
+	app, err := getApp(name)
+	if err != nil {
+		return err
+	}
+
+	apps = nil
+
+	return cClient.DeleteApplication(*app.ID)
+}
 
 func getApps() ([]*cedexis.Application, error) {
 	if apps == nil {
@@ -30,7 +52,6 @@ func getApps() ([]*cedexis.Application, error) {
 }
 
 func getApp(name string) (*cedexis.Application, error) {
-	fmt.Printf("getApp: %s\n", name)
 	allApps, err := getApps()
 	if err != nil {
 		return nil, err

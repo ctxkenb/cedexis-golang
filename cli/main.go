@@ -124,6 +124,42 @@ func handleCreateAlert(command *parser.Command) {
 	}
 }
 
+func handleCreateApplication(command *parser.Command) {
+	appType := command.Args[argType]
+
+	fallbackCname := command.Args[argFallbackCname]
+
+	availabilityThreshold, err := parseInt(command.Args[argAvailabilityThreshold])
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	targetPlatformID, err := getPlatformID(command.Args[argTargetPlatform], cedexis.PlatformsTypeAll, nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	targetCname := command.Args[argTargetCname]
+
+	sonarEnabled, err := parseBool(command.Args[argSonarEnabled])
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if sonarEnabled == nil {
+		enabled := true
+		sonarEnabled = &enabled
+	}
+
+	err = createApp(command.Args[argName], command.Args[argDescription], appType, fallbackCname, *availabilityThreshold, targetPlatformID, targetCname, *sonarEnabled)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+}
+
 func handleList(command *parser.Command) {
 	var t *Table
 	var err error
@@ -227,6 +263,13 @@ func handleDeletePlatform(command *parser.Command) {
 
 func handleDeleteAlert(command *parser.Command) {
 	err := deleteAlert(command.Args[argName])
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func handleDeleteApplication(command *parser.Command) {
+	err := deleteApp(command.Args[argName])
 	if err != nil {
 		fmt.Println(err)
 	}

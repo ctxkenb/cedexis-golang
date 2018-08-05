@@ -112,3 +112,16 @@ func suggestApps(s string) []parser.Suggestion {
 
 	return parser.FilterContains(result, s, true)
 }
+
+func suggestAppTypes(s string) []parser.Suggestion {
+	result := []parser.Suggestion{
+		{Text: cedexis.ApplicationTypeJavascriptV1, Description: "Javascript"},
+		{Text: cedexis.ApplicationTypeOptimalRTT, Description: "Optimal RTT"},
+		{Text: cedexis.ApplicationTypeFailover, Description: "Static Failover"},
+		{Text: cedexis.ApplicationTypeRoundRobin, Description: "Round-Robin"},
+		{Text: cedexis.ApplicationTypeStaticRouting, Description: "Static"},
+		{Text: cedexis.ApplicationTypeThroughput, Description: "Throughput"},
+	}
+
+	return parser.FilterHasPrefix(result, s, true)
+}

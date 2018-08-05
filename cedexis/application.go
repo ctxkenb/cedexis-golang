@@ -1,5 +1,7 @@
 package cedexis
 
+import "fmt"
+
 const appsConfigPath = "/config/applications/dns.json"
 
 const (
@@ -67,6 +69,7 @@ type Application struct {
 	HOPXSecureApp         *bool                 `json:"hopxSecureApp,omitempty"`
 }
 
+// GetApplications gets all applications.
 func (c *Client) GetApplications() ([]*Application, error) {
 	var resp []*Application
 	err := c.getJSON(baseURL+appsConfigPath, &resp)
@@ -76,4 +79,32 @@ func (c *Client) GetApplications() ([]*Application, error) {
 	}
 
 	return resp, nil
+}
+
+// GetApplication gets an alert.
+func (c *Client) GetApplication(id int) (*Alert, error) {
+	result := Alert{}
+	err := c.getJSON(baseURL+appsConfigPath+fmt.Sprintf("/%d", id), &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, err
+}
+
+// CreateApplication creates an application
+func (c *Client) CreateApplication(name string, description string, t string, fallbackName string, availabilityThreshold int, targets []ApplicationPlatform) error {
+	app := Application{
+		Name:                  &name,
+		Description:           &description,
+		Type:                  &t,
+		FallbackCname:         &fallbackName,
+		AvailabilityThreshold: &availabilityThreshold,
+		Platforms:             targets,
+	}
+	return c.postJSON(baseURL+appsConfigPath, &app, nil)
+}
+
+// DeleteApplication deletes an app.
+func (c *Client) DeleteApplication(id int) error {
+	return c.delete(baseURL + appsConfigPath + fmt.Sprintf("/%d", id))
 }

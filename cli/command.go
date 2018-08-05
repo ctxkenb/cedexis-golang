@@ -87,6 +87,12 @@ const (
 	// CmdShowApplication represents command "show application"
 	CmdShowApplication CommandCode = CommandCode(int(CmdFragShow | (CmdFragApp << 8)))
 
+	// CmdCreateApplication represents command "create application"
+	CmdCreateApplication CommandCode = CommandCode(int(CmdFragCreate | (CmdFragApp << 8)))
+
+	// CmdDeleteApplication represents commdn "delete application"
+	CmdDeleteApplication CommandCode = CommandCode(int(CmdFragDelete | (CmdFragApp << 8)))
+
 	// CmdExit represents "exit" command
 	CmdExit CommandCode = CommandCode(int(CmdFragExit))
 )
@@ -104,6 +110,8 @@ var commandCodeNames = map[CommandCode]string{
 	CmdShowAlert:              "CmdShowAlert",
 	CmdListApplications:       "CmdListApplications",
 	CmdShowApplication:        "CmdShowApplication",
+	CmdCreateApplication:      "CmdCreateApplication",
+	CmdDeleteApplication:      "CmdDeleteApplication",
 	CmdExit:                   "CmdExit",
 }
 
@@ -136,12 +144,15 @@ const (
 	argEmails                  string = "emails"
 	argTiming                  string = "timing"
 	argInterval                string = "interval"
+	argFallbackCname           string = "fallbackCname"
+	argTargetPlatform          string = "targetPlatform"
+	argAvailabilityThreshold   string = "availabilityThreshold"
+	argTargetCname             string = "targetCname"
 )
 
 var commandSpec = map[string]parser.CommandFrag{
 	"create": {Desc: "Creates platforms, alerts, etc",
 		Args: map[string]parser.NamedArg{
-			argShortName:   {Desc: "Set the shortname"},
 			argDescription: {Desc: "Set the description"},
 		},
 		Sub: map[string]parser.CommandFrag{
@@ -151,6 +162,7 @@ var commandSpec = map[string]parser.CommandFrag{
 					Handler: handleCreatePlatform,
 					PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of platform"}},
 					Args: map[string]parser.NamedArg{
+						argShortName:               {Desc: "Set the shortname"},
 						argRegion:                  {Desc: "Set the public cloud region", Suggest: suggestCloudPlatforms},
 						argTags:                    {Desc: "Set tags on the new platform"},
 						argSonarEnabled:            {Desc: "Enable sonar health-checks"},
@@ -180,6 +192,19 @@ var commandSpec = map[string]parser.CommandFrag{
 					argInterval: {Desc: "Alert gap (in minutes)", Suggest: suggestAlertInterval},
 				},
 			},
+			"application": {Desc: "Create a new Openmix app",
+				Code:    int(CmdCreateApplication),
+				Handler: handleCreateApplication,
+				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of application"}},
+				Args: map[string]parser.NamedArg{
+					argType:                  {Desc: "The app type", Suggest: suggestAppTypes},
+					argFallbackCname:         {Desc: "fallback CNAME"},
+					argAvailabilityThreshold: {Desc: "availability threshold"},
+					argTargetPlatform:        {Desc: "first target platform", Suggest: suggestAllPlatforms},
+					argTargetCname:           {Desc: "first target CNAME"},
+					argSonarEnabled:          {Desc: "first target sonar enabled"},
+				},
+			},
 		},
 	},
 	"delete": {Desc: "Deletes platforms, alerts, etc",
@@ -193,6 +218,11 @@ var commandSpec = map[string]parser.CommandFrag{
 				Handler: handleDeleteAlert,
 				Code:    int(CmdDeleteAlert),
 				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of alert", Suggest: suggestAlerts}},
+			},
+			"application": {Desc: "Delete an application",
+				Handler: handleDeleteApplication,
+				Code:    int(CmdDeleteApplication),
+				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of application", Suggest: suggestApps}},
 			},
 		},
 	},
