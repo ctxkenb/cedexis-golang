@@ -45,6 +45,9 @@ const (
 
 	// CmdFragPrivate represents the "xxx xxx private" sub-command
 	CmdFragPrivate
+
+	// CmdFragApp represents the "xxx application" sub-command
+	CmdFragApp
 )
 
 const (
@@ -77,6 +80,9 @@ const (
 
 	// CmdShowAlert reprsents command "show alert"
 	CmdShowAlert CommandCode = CommandCode(int(CmdFragShow | (CmdFragAlert << 8)))
+
+	// CmdListApplications represents command "list applications"
+	CmdListApplications CommandCode = CommandCode(int(CmdFragList | (CmdFragApp << 8)))
 
 	// CmdExit represents "exit" command
 	CmdExit CommandCode = CommandCode(int(CmdFragExit))
@@ -194,7 +200,8 @@ var commandSpec = map[string]parser.CommandFrag{
 					"community": {Desc: "List community platforms", Code: int(CmdListCommunityPlatforms)},
 					"private":   {Desc: "List private platforms", Code: int(CmdListPrivatePlatforms)},
 				}},
-			"alert": {Desc: "List alerts", Code: int(CmdListAlerts)},
+			"alert":       {Desc: "List alerts", Code: int(CmdListAlerts)},
+			"application": {Desc: "List Openmix apps", Code: int(CmdListApplications)},
 		},
 	},
 	"show": {Desc: "Show details",

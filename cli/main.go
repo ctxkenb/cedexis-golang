@@ -128,7 +128,9 @@ func handleList(command *parser.Command) {
 	var t *Table
 	var err error
 
-	if ((command.Code >> 8) & 0xff) == int(CmdFragPlatform) {
+	objType := CommandFrag((command.Code >> 8) & 0xff)
+	switch objType {
+	case CmdFragPlatform:
 		var platforms []*cedexis.PlatformInfo
 		switch CommandCode(command.Code) {
 		case CmdListCommunityPlatforms:
@@ -147,7 +149,7 @@ func handleList(command *parser.Command) {
 		}
 
 		t = platformsToTable(platforms)
-	} else if ((command.Code >> 8) & 0xff) == int(CmdFragAlert) {
+	case CmdFragAlert:
 		alerts, err := getAlerts()
 		if err != nil {
 			fmt.Println(err)
@@ -155,7 +157,15 @@ func handleList(command *parser.Command) {
 		}
 
 		t = alertsToTable(alerts)
-	} else {
+	case CmdFragApp:
+		apps, err := getApps()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		t = appsToTable(apps)
+	default:
 		fmt.Println("Unrecognized command: " + commandCodeNames[CommandCode(command.Code)])
 		return
 	}
