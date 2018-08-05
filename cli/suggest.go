@@ -98,3 +98,17 @@ func suggestAlertInterval(s string) []parser.Suggestion {
 
 	return parser.FilterHasPrefix(result, s, true)
 }
+
+func suggestApps(s string) []parser.Suggestion {
+	apps, err := getApps()
+	if err != nil {
+		return nil
+	}
+
+	result := make([]parser.Suggestion, 0, len(apps))
+	for _, a := range apps {
+		result = append(result, parser.Suggestion{Text: "\"" + *a.Name + "\""})
+	}
+
+	return parser.FilterContains(result, s, true)
+}

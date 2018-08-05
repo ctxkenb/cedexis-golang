@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/ctxkenb/cedexis-golang/cedexis"
@@ -26,6 +27,22 @@ func getApps() ([]*cedexis.Application, error) {
 		m = append(m, val)
 	}
 	return m, nil
+}
+
+func getApp(name string) (*cedexis.Application, error) {
+	fmt.Printf("getApp: %s\n", name)
+	allApps, err := getApps()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, a := range allApps {
+		if *(a.Name) == name {
+			return a, nil
+		}
+	}
+
+	return nil, nil
 }
 
 func appsToTable(apps []*cedexis.Application) *Table {

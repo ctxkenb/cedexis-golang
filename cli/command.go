@@ -84,6 +84,9 @@ const (
 	// CmdListApplications represents command "list applications"
 	CmdListApplications CommandCode = CommandCode(int(CmdFragList | (CmdFragApp << 8)))
 
+	// CmdShowApplication represents command "show application"
+	CmdShowApplication CommandCode = CommandCode(int(CmdFragShow | (CmdFragApp << 8)))
+
 	// CmdExit represents "exit" command
 	CmdExit CommandCode = CommandCode(int(CmdFragExit))
 )
@@ -99,6 +102,8 @@ var commandCodeNames = map[CommandCode]string{
 	CmdDeleteAlert:            "CmdDeleteAlert",
 	CmdListAlerts:             "CmdListAlerts",
 	CmdShowAlert:              "CmdShowAlert",
+	CmdListApplications:       "CmdListApplications",
+	CmdShowApplication:        "CmdShowApplication",
 	CmdExit:                   "CmdExit",
 }
 
@@ -214,6 +219,10 @@ var commandSpec = map[string]parser.CommandFrag{
 			"alert": {Desc: "Show alert",
 				Code:    int(CmdShowAlert),
 				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of alert", Suggest: suggestAlerts}},
+			},
+			"application": {Desc: "Show Openmix app",
+				Code:    int(CmdShowApplication),
+				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of application", Suggest: suggestApps}},
 			},
 		},
 	},
