@@ -48,6 +48,9 @@ const (
 
 	// CmdFragApp represents the "xxx application" sub-command
 	CmdFragApp
+
+	// CmdFragZone represents the "xxx zone" sub-command
+	CmdFragZone
 )
 
 const (
@@ -93,6 +96,18 @@ const (
 	// CmdDeleteApplication represents commdn "delete application"
 	CmdDeleteApplication CommandCode = CommandCode(int(CmdFragDelete | (CmdFragApp << 8)))
 
+	// CmdListZones represents command "list zones"
+	CmdListZones CommandCode = CommandCode(int(CmdFragList | (CmdFragZone << 8)))
+
+	// CmdShowZone represents command "show zone"
+	CmdShowZone CommandCode = CommandCode(int(CmdFragShow | (CmdFragZone << 8)))
+
+	// CmdCreateZone represents command "create zone"
+	CmdCreateZone CommandCode = CommandCode(int(CmdFragCreate | (CmdFragZone << 8)))
+
+	// CmdDeleteZone represents commdn "delete zone"
+	CmdDeleteZone CommandCode = CommandCode(int(CmdFragDelete | (CmdFragZone << 8)))
+
 	// CmdExit represents "exit" command
 	CmdExit CommandCode = CommandCode(int(CmdFragExit))
 )
@@ -112,6 +127,10 @@ var commandCodeNames = map[CommandCode]string{
 	CmdShowApplication:        "CmdShowApplication",
 	CmdCreateApplication:      "CmdCreateApplication",
 	CmdDeleteApplication:      "CmdDeleteApplication",
+	CmdListZones:              "CmdListZones",
+	CmdShowZone:               "CmdShowZone",
+	CmdCreateZone:             "CmdCreateZone",
+	CmdDeleteZone:             "CmdDeleteZone",
 	CmdExit:                   "CmdExit",
 }
 
@@ -237,6 +256,7 @@ var commandSpec = map[string]parser.CommandFrag{
 				}},
 			"alert":       {Desc: "List alerts", Code: int(CmdListAlerts)},
 			"application": {Desc: "List Openmix apps", Code: int(CmdListApplications)},
+			"zone":        {Desc: "List DNS zones", Code: int(CmdListZones)},
 		},
 	},
 	"show": {Desc: "Show details",

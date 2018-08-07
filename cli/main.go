@@ -201,6 +201,14 @@ func handleList(command *parser.Command) {
 		}
 
 		t = appsToTable(apps)
+	case CmdFragZone:
+		zones, err := getZones()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		t = zonesToTable(zones)
 	default:
 		fmt.Println("Unrecognized command: " + commandCodeNames[CommandCode(command.Code)])
 		return
