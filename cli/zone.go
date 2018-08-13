@@ -8,6 +8,11 @@ import (
 
 var zones *map[int]cedexis.Zone
 
+func createZone(name string, description string, tags []string, content *string) error {
+	zones = nil
+	return cClient.CreateZone(name, description, tags, content)
+}
+
 func getZones() ([]cedexis.Zone, error) {
 	if zones == nil {
 		newZones, err := cClient.GetZones()
@@ -41,6 +46,16 @@ func getZone(name string) (*cedexis.Zone, error) {
 	}
 
 	return nil, nil
+}
+
+func deleteZone(name string) error {
+	z, err := getZone(name)
+	if err != nil {
+		return err
+	}
+
+	zones = nil
+	return cClient.DeleteZone(*z.ID)
 }
 
 func zonesToTable(zones []cedexis.Zone) *Table {

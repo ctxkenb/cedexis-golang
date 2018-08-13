@@ -167,6 +167,7 @@ const (
 	argTargetPlatform          string = "targetPlatform"
 	argAvailabilityThreshold   string = "availabilityThreshold"
 	argTargetCname             string = "targetCname"
+	argZoneFile                string = "zoneFile"
 )
 
 var commandSpec = map[string]parser.CommandFrag{
@@ -224,6 +225,15 @@ var commandSpec = map[string]parser.CommandFrag{
 					argSonarEnabled:          {Desc: "first target sonar enabled"},
 				},
 			},
+			"zone": {Desc: "Create a new DNS zone",
+				Code:    int(CmdCreateZone),
+				Handler: handleCreateZone,
+				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of DNS zone"}},
+				Args: map[string]parser.NamedArg{
+					argTags:     {Desc: "Set tags on the new DNS zone"},
+					argZoneFile: {Desc: "Initialize from file"},
+				},
+			},
 		},
 	},
 	"delete": {Desc: "Deletes platforms, alerts, etc",
@@ -242,6 +252,11 @@ var commandSpec = map[string]parser.CommandFrag{
 				Handler: handleDeleteApplication,
 				Code:    int(CmdDeleteApplication),
 				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of application", Suggest: suggestApps}},
+			},
+			"zone": {Desc: "Delete a DNS zone",
+				Handler: handleDeleteZone,
+				Code:    int(CmdDeleteZone),
+				PosArgs: []parser.PosArg{{Name: argName, Desc: "Name of DNS zone", Suggest: suggestZones}},
 			},
 		},
 	},

@@ -192,6 +192,7 @@ func (r *Record) responseObject() interface{} {
 
 // CreateZone creates a new DNS zone, with optional zone file
 func (c *Client) CreateZone(name string, description string, tags []string, importContents *string) error {
+	t := true
 	tagsString := strings.Join(tags, ",")
 
 	zone := Zone{
@@ -199,6 +200,7 @@ func (c *Client) CreateZone(name string, description string, tags []string, impo
 		Description:    &description,
 		Tags:           &tagsString,
 		ImportContents: importContents,
+		IsPrimary:      &t,
 	}
 
 	return c.postJSON(baseURL+dnsConfigPath, &zone, nil)

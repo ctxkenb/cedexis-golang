@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"strconv"
@@ -160,6 +161,33 @@ func handleCreateApplication(command *parser.Command) {
 	}
 }
 
+func handleCreateZone(command *parser.Command) {
+	var err error
+
+	name := command.Args[argName]
+	description := command.Args[argDescription]
+	tags := strings.Split(command.Args[argTags], ",")
+
+	var zoneFile *string
+	fileName := command.Args[argZoneFile]
+	if len(fileName) > 0 {
+		zoneData, err := ioutil.ReadFile(fileName)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		zoneStr := string(zoneData)
+		zoneFile = &zoneStr
+	}
+
+	err = createZone(name, description, tags, zoneFile)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+}
+
 func handleList(command *parser.Command) {
 	var t *Table
 	var err error
@@ -284,6 +312,13 @@ func handleDeleteAlert(command *parser.Command) {
 
 func handleDeleteApplication(command *parser.Command) {
 	err := deleteApp(command.Args[argName])
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func handleDeleteZone(command *parser.Command) {
+	err := deleteZone(command.Args[argName])
 	if err != nil {
 		fmt.Println(err)
 	}
