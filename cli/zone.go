@@ -28,6 +28,21 @@ func getZones() ([]cedexis.Zone, error) {
 	return m, nil
 }
 
+func getZone(name string) (*cedexis.Zone, error) {
+	allZones, err := getZones()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, z := range allZones {
+		if *(z.DomainName) == name {
+			return &z, nil
+		}
+	}
+
+	return nil, nil
+}
+
 func zonesToTable(zones []cedexis.Zone) *Table {
 	t := Table{
 		Columns: []string{"Domain", "Records", "Description"},

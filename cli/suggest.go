@@ -125,3 +125,17 @@ func suggestAppTypes(s string) []parser.Suggestion {
 
 	return parser.FilterHasPrefix(result, s, true)
 }
+
+func suggestZones(s string) []parser.Suggestion {
+	zones, err := getZones()
+	if err != nil {
+		return nil
+	}
+
+	result := make([]parser.Suggestion, 0, len(zones))
+	for _, z := range zones {
+		result = append(result, parser.Suggestion{Text: "\"" + *z.DomainName + "\""})
+	}
+
+	return parser.FilterContains(result, s, true)
+}

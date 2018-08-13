@@ -251,6 +251,12 @@ func handleShow(command *parser.Command) {
 			fmt.Println(err)
 			return
 		}
+	case CmdFragZone:
+		obj, err = getZone(command.Args[argName])
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 	}
 
 	data, err := json.MarshalIndent(obj, "", "  ")
