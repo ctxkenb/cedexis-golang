@@ -28,7 +28,7 @@ func getPlatforms(t cedexis.PlatformType, category *cedexis.PlatformCategory) []
 
 	result := make([]*cedexis.PlatformInfo, 0, len(platforms[t]))
 	for _, p := range platforms[t] {
-		if *p.Category.ID == int(*category) {
+		if *p.Category.ID == *category {
 			result = append(result, p)
 		}
 	}

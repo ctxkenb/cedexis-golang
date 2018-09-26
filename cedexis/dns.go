@@ -7,6 +7,7 @@ import (
 )
 
 const dnsConfigPath = "/config/authdns.json"
+const dnsRecordConfigPath = "/config/authdns.json/record"
 
 const (
 	// RecordTypeA is for IPv4 addresses
@@ -190,8 +191,41 @@ func (r *Record) responseObject() interface{} {
 	}
 }
 
+// DiffersFrom determins if any fields specified in this record differ from the other record
+func (r *Record) DiffersFrom(other *Record) bool {
+	if r == nil {
+		return other == nil
+	}
+
+	if r.ID != nil && intsDiffer(r.ID, other.ID) {
+		return true
+	}
+
+	if r.DNSZoneID != nil && intsDiffer(r.DNSZoneID, other.DNSZoneID) {
+		return true
+	}
+
+	if r.TTL != nil && intsDiffer(r.TTL, other.TTL) {
+		return true
+	}
+
+	if r.SubdomainName != nil && stringsDiffer(r.SubdomainName, other.SubdomainName) {
+		return true
+	}
+
+	if r.RecordType != nil && stringsDiffer(r.RecordType, other.RecordType) {
+		return true
+	}
+
+	if r.Response != nil && stringsDiffer(r.Response, other.Response) {
+		return true
+	}
+
+	return false
+}
+
 // CreateZone creates a new DNS zone, with optional zone file
-func (c *Client) CreateZone(name string, description string, tags []string, importContents *string) error {
+func (c *Client) CreateZone(name string, description string, tags []string, importContents *string) (*Zone, error) {
 	t := true
 	tagsString := strings.Join(tags, ",")
 
@@ -203,7 +237,12 @@ func (c *Client) CreateZone(name string, description string, tags []string, impo
 		IsPrimary:      &t,
 	}
 
-	return c.postJSON(baseURL+dnsConfigPath, &zone, nil)
+	err := c.postJSON(baseURL+dnsConfigPath, &zone, &zone)
+	if err != nil {
+		return nil, err
+	}
+
+	return &zone, nil
 }
 
 // GetZones returns all configured zones.
@@ -231,4 +270,64 @@ func (c *Client) GetZone(id int) (*Zone, error) {
 // DeleteZone deletes an alert.
 func (c *Client) DeleteZone(id int) error {
 	return c.delete(baseURL + dnsConfigPath + fmt.Sprintf("/%d", id))
+}
+
+// GetZoneByName gets a zone by name, returning nil if not found
+func (c *Client) GetZoneByName(name string) (*Zone, error) {
+	zones, err := c.GetZones()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, z := range zones {
+		if strings.ToLower(name) == strings.ToLower(*z.DomainName) {
+			return &z, nil
+		}
+	}
+
+	// Not found
+	return nil, nil
+}
+
+// CreateRecord creates a DNS record
+func (c *Client) CreateRecord(r *Record) (*Record, error) {
+	out := Record{}
+	err := c.postJSON(baseURL+dnsRecordConfigPath, r, &out)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}
+
+// GetRecordByName gets a DNS record
+func (c *Client) GetRecordByName(zone string, name string, rtype string) (*Record, error) {
+	z, err := c.GetZoneByName(zone)
+	if err != nil {
+		return nil, err
+	}
+
+	// Zone not found, so record not found
+	if z == nil {
+		return nil, nil
+	}
+
+	for _, r := range z.Records {
+		if strings.ToLower(name) == strings.ToLower(*r.SubdomainName) && rtype == *r.RecordType {
+			return &r, nil
+		}
+	}
+
+	// Not found
+	return nil, nil
+}
+
+// UpdateRecord updates a record
+func (c *Client) UpdateRecord(r *Record) (*Record, error) {
+	out := Record{}
+	err := c.putJSON(baseURL+dnsRecordConfigPath+fmt.Sprintf("/%d", *r.ID), r, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
 }

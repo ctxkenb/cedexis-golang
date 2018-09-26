@@ -11,13 +11,16 @@ var apps *map[int]*cedexis.Application
 func createApp(name string, description string, t string, fallbackName string, availabilityThreshold int, targetPlatform int, targetCname string, useSonar bool) error {
 	apps = nil
 
-	return cClient.CreateApplication(name, description, t, fallbackName, availabilityThreshold, []cedexis.ApplicationPlatform{
+	newApp := cedexis.NewApplication(name, description, t, fallbackName, availabilityThreshold, []cedexis.ApplicationPlatform{
 		{
 			ID:           &targetPlatform,
 			Cname:        &targetCname,
 			SonarEnabled: &useSonar,
 		},
 	})
+
+	_, err := cClient.CreateApplication(newApp)
+	return err
 }
 
 func deleteApp(name string) error {

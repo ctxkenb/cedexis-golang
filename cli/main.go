@@ -362,7 +362,7 @@ func parseSonarConfig(vars map[string]string) (*cedexis.SonarConfig, error) {
 	}
 
 	sonarHost := stringOrNil(vars[argSonarHost])
-	sonarMarket := stringOrNil(vars[argSonarMarket])
+	sonarMarket := (*cedexis.Market)(stringOrNil(vars[argSonarMarket]))
 	sonarRequestContentType := stringOrNil(vars[argSonarRequestContentType])
 	sonarResponseBodyMatch := stringOrNil(vars[argSonarResponseBodyMatch])
 	sonarResponseMatchType := stringOrNil(vars[argSonarResponseMatchType])

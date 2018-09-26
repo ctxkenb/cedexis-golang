@@ -10,7 +10,8 @@ var zones *map[int]cedexis.Zone
 
 func createZone(name string, description string, tags []string, content *string) error {
 	zones = nil
-	return cClient.CreateZone(name, description, tags, content)
+	_, err := cClient.CreateZone(name, description, tags, content)
+	return err
 }
 
 func getZones() ([]cedexis.Zone, error) {

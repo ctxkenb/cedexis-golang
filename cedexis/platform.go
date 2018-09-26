@@ -1,6 +1,9 @@
 package cedexis
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 const platformsConfigPath = "/config/platforms.json"
 const platformsReportingPath = "/reporting/platforms.json"
@@ -48,8 +51,8 @@ type RadarConfig struct {
 
 // NameID represents a name-value pair
 type NameID struct {
-	ID   *int    `json:"id,omitempty"`
-	Name *string `json:"name,omitempty"`
+	ID   *PlatformCategory `json:"id,omitempty"`
+	Name *string           `json:"name,omitempty"`
 }
 
 // SonarConfig represents the sonar configuration for a platform
@@ -62,7 +65,7 @@ type SonarConfig struct {
 	IgnoreSSLErrors     *bool   `json:"ignoreSSLErrors,omitempty"`
 	MaintenanceMode     *bool   `json:"maintenanceMode,omitempty"`
 	Host                *string `json:"host,omitempty"`
-	Market              *string `json:"market,omitempty"`
+	Market              *Market `json:"market,omitempty"`
 	RequestContentType  *string `json:"requestContentType,omitempty"`
 	ResponseBodyMatch   *string `json:"responseBodyMatch,omitempty"`
 	ResponseMatchType   *string `json:"responseMatchType,omitempty"`
@@ -217,11 +220,33 @@ func (c *Client) DeletePrivatePlatform(id int) error {
 	return c.delete(baseURL + platformsConfigPath + "/" + fmt.Sprintf("%d", id))
 }
 
+// UpdatePrivatePlatform updates a platform
+func (c *Client) UpdatePrivatePlatform(spec *PlatformConfig) error {
+	return c.putJSON(baseURL+platformsConfigPath+"/"+fmt.Sprintf("%d", *spec.ID), spec, nil)
+}
+
 // GetPrivatePlatform gets a platform by ID
 func (c *Client) GetPrivatePlatform(id int) (*PlatformConfig, error) {
 	var cfg *PlatformConfig
 	err := c.getJSON(baseURL+platformsConfigPath+"/"+fmt.Sprintf("%d", id), &cfg)
 	return cfg, err
+}
+
+// GetPrivatePlatformByName gets a platform by Name
+func (c *Client) GetPrivatePlatformByName(name string) (*PlatformConfig, error) {
+	platforms, err := c.GetPlatforms(PlatformsTypePrivate)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, p := range platforms {
+		if strings.ToLower(name) == strings.ToLower(*p.Name) {
+			return c.GetPrivatePlatform(*p.ID)
+		}
+	}
+
+	// Not found
+	return nil, nil
 }
 
 //
@@ -242,11 +267,7 @@ func NewPublicCloudPrivatePlatform(
 	archetypeID int,
 	tags []string) *PlatformConfig {
 
-	platformid := 1
-	fusionArchetype := "CUSTOM"
-	openmixVisible := true
-	privateArchetype := false
-	publicChartEnabled := false
+	platformid := PlatformCategoryCloudComputing
 	radarCacheBursting := true
 	radarMajorNetworksOnly := true
 	radarUsePublicData := true
@@ -254,14 +275,10 @@ func NewPublicCloudPrivatePlatform(
 	sonarPollIntervalSeconds := 60
 
 	return &PlatformConfig{
-		Category:                  &NameID{ID: &platformid},
-		DisplayName:               &displayName,
-		FusionArchetype:           &fusionArchetype,
-		IntendedUse:               &description,
-		Name:                      &name,
-		OpenmixVisible:            &openmixVisible,
-		PrivateArchetype:          &privateArchetype,
-		PublicChartEnabled:        &publicChartEnabled,
+		Category:    &NameID{ID: &platformid},
+		DisplayName: &displayName,
+		IntendedUse: &description,
+		Name:        &name,
 		PublicProviderArchetypeID: &archetypeID,
 		RadarConfig: &RadarConfig{
 			CacheBursting:     &radarCacheBursting,
@@ -274,5 +291,342 @@ func NewPublicCloudPrivatePlatform(
 		},
 		Tags: &tags,
 	}
+}
 
+// DiffersFrom indicates if any fields in this config (that are non-nil) differ from another
+// config.
+func (c *PlatformConfig) DiffersFrom(other *PlatformConfig) bool {
+	if c == nil {
+		return other == nil
+	}
+
+	if c.Created != nil && stringsDiffer(c.Created, other.Created) {
+		return true
+	}
+
+	if c.DisplayName != nil && stringsDiffer(c.DisplayName, other.DisplayName) {
+		return true
+	}
+
+	if c.FusionCustomConfig != nil && c.FusionCustomConfig.DiffersFrom(other.FusionCustomConfig) {
+		return true
+	}
+
+	if c.OpenmixVisible != nil && boolsDiffer(c.OpenmixVisible, other.OpenmixVisible) {
+		return true
+	}
+
+	if c.PublicChartEnabled != nil && boolsDiffer(c.PublicChartEnabled, other.PublicChartEnabled) {
+		return true
+	}
+
+	if c.RadarConfig != nil && c.RadarConfig.DiffersFrom(other.RadarConfig) {
+		return true
+	}
+
+	if c.OwnerID != nil && intsDiffer(c.OwnerID, other.OwnerID) {
+		return true
+	}
+
+	if c.Enabled != nil && boolsDiffer(c.Enabled, other.Enabled) {
+		return true
+	}
+
+	if c.Tags != nil && stringArraysDiffer(c.Tags, other.Tags) {
+		return true
+	}
+
+	if c.PlatformSubstitutionSources != nil && intArraysDiffer(c.PlatformSubstitutionSources, other.PlatformSubstitutionSources) {
+		return true
+	}
+
+	if c.Name != nil && stringsDiffer(c.Name, other.Name) {
+		return true
+	}
+
+	if c.Modified != nil && stringsDiffer(c.Modified, other.Modified) {
+		return true
+	}
+
+	if c.IntendedUse != nil && stringsDiffer(c.IntendedUse, other.IntendedUse) {
+		return true
+	}
+
+	if c.ID != nil && intsDiffer(c.ID, other.ID) {
+		return true
+	}
+
+	if c.Category != nil && c.Category.DiffersFrom(other.Category) {
+		return true
+	}
+
+	if c.PrivateArchetype != nil && boolsDiffer(c.PrivateArchetype, other.PrivateArchetype) {
+		return true
+	}
+
+	if c.SonarConfig != nil && c.SonarConfig.DiffersFrom(other.SonarConfig) {
+		return true
+	}
+
+	if c.PublicProviderArchetypeID != nil && intsDiffer(c.PublicProviderArchetypeID, other.PublicProviderArchetypeID) {
+		return true
+	}
+
+	if c.FusionArchetype != nil && stringsDiffer(c.FusionArchetype, other.FusionArchetype) {
+		return true
+	}
+
+	return false
+}
+
+// DiffersFrom indicates if any fields in this config (that are non-nil) differ from another
+// config.
+func (c *FusionCustomConfig) DiffersFrom(other *FusionCustomConfig) bool {
+	if c == nil {
+		return other == nil
+	}
+
+	if c.Enabled != nil && boolsDiffer(c.Enabled, other.Enabled) {
+		return true
+	}
+
+	if c.LoadURL != nil && stringsDiffer(c.LoadURL, other.LoadURL) {
+		return true
+	}
+
+	if c.LoadRateSeconds != nil && intsDiffer(c.LoadRateSeconds, other.LoadRateSeconds) {
+		return true
+	}
+
+	return false
+}
+
+// DiffersFrom indicates if any fields in this config (that are non-nil) differ from another
+// config.
+func (c *RadarConfig) DiffersFrom(other *RadarConfig) bool {
+	if c == nil {
+		return other == nil
+	}
+
+	if c.HTTPEnabled != nil && boolsDiffer(c.HTTPEnabled, other.HTTPEnabled) {
+		return true
+	}
+
+	if c.HTTPSEnabled != nil && boolsDiffer(c.HTTPSEnabled, other.HTTPSEnabled) {
+		return true
+	}
+
+	if c.UsePublicData != nil && boolsDiffer(c.UsePublicData, other.UsePublicData) {
+		return true
+	}
+
+	if c.PrimeURL != nil && stringsDiffer(c.PrimeURL, other.PrimeURL) {
+		return true
+	}
+
+	if c.RTTURL != nil && stringsDiffer(c.RTTURL, other.RTTURL) {
+		return true
+	}
+
+	if c.XLURL != nil && stringsDiffer(c.XLURL, other.XLURL) {
+		return true
+	}
+
+	if c.CustomURL != nil && stringsDiffer(c.CustomURL, other.CustomURL) {
+		return true
+	}
+
+	if c.PrimeSecureURL != nil && stringsDiffer(c.PrimeSecureURL, other.PrimeSecureURL) {
+		return true
+	}
+
+	if c.RTTSecureURL != nil && stringsDiffer(c.RTTSecureURL, other.RTTSecureURL) {
+		return true
+	}
+
+	if c.XLSecureURL != nil && stringsDiffer(c.XLSecureURL, other.XLSecureURL) {
+		return true
+	}
+
+	if c.CustomSecureURL != nil && stringsDiffer(c.CustomSecureURL, other.CustomSecureURL) {
+		return true
+	}
+
+	if c.Weight != nil && intsDiffer(c.Weight, other.Weight) {
+		return true
+	}
+
+	if c.SubProviderID != nil && intsDiffer(c.SubProviderID, other.SubProviderID) {
+		return true
+	}
+
+	if c.SubProviderOwnerZoneID != nil && intsDiffer(c.SubProviderOwnerZoneID, other.SubProviderOwnerZoneID) {
+		return true
+	}
+
+	if c.SubProviderOwnerCustomerID != nil && intsDiffer(c.SubProviderOwnerCustomerID, other.SubProviderOwnerCustomerID) {
+		return true
+	}
+
+	if c.MajorNetworksOnly != nil && boolsDiffer(c.MajorNetworksOnly, other.MajorNetworksOnly) {
+		return true
+	}
+
+	if c.WeightEnabled != nil && boolsDiffer(c.WeightEnabled, other.WeightEnabled) {
+		return true
+	}
+
+	if c.CacheBursting != nil && boolsDiffer(c.CacheBursting, other.CacheBursting) {
+		return true
+	}
+
+	if c.IsoWeight != nil && intsDiffer(c.IsoWeight, other.IsoWeight) {
+		return true
+	}
+
+	if c.IsoWeightList != nil && stringsDiffer(c.IsoWeightList, other.IsoWeightList) {
+		return true
+	}
+
+	if c.IsoWeightEnabled != nil && boolsDiffer(c.IsoWeightEnabled, other.IsoWeightEnabled) {
+		return true
+	}
+
+	if c.MarketWeight != nil && intsDiffer(c.MarketWeight, other.MarketWeight) {
+		return true
+	}
+
+	if c.MarketWeightList != nil && stringsDiffer(c.MarketWeightList, other.MarketWeightList) {
+		return true
+	}
+
+	if c.MarketWeightEnabled != nil && boolsDiffer(c.MarketWeightEnabled, other.MarketWeightEnabled) {
+		return true
+	}
+
+	if c.PrimeType != nil && stringsDiffer(c.PrimeType, other.PrimeType) {
+		return true
+	}
+
+	if c.RTTType != nil && stringsDiffer(c.RTTType, other.RTTType) {
+		return true
+	}
+
+	if c.XLType != nil && stringsDiffer(c.XLType, other.XLType) {
+		return true
+	}
+
+	if c.CustomType != nil && stringsDiffer(c.CustomType, other.CustomType) {
+		return true
+	}
+
+	if c.PrimeSecureType != nil && stringsDiffer(c.PrimeSecureType, other.PrimeSecureType) {
+		return true
+	}
+
+	return false
+}
+
+// DiffersFrom indicates if any fields in this config (that are non-nil) differ from another
+// config.
+func (c *NameID) DiffersFrom(other *NameID) bool {
+	if c == nil {
+		return other == nil
+	}
+
+	if c.ID != nil && c.ID.DiffersFrom(other.ID) {
+		return true
+	}
+
+	if c.Name != nil && stringsDiffer(c.Name, other.Name) {
+		return true
+	}
+
+	return false
+}
+
+// DiffersFrom indicates if any fields in this config (that are non-nil) differ from another
+// config.
+func (c *SonarConfig) DiffersFrom(other *SonarConfig) bool {
+	if c == nil {
+		return other == nil
+	}
+
+	if c.Enabled != nil && boolsDiffer(c.Enabled, other.Enabled) {
+		return true
+	}
+
+	if c.URL != nil && stringsDiffer(c.URL, other.URL) {
+		return true
+	}
+
+	if c.PollIntervalSeconds != nil && intsDiffer(c.PollIntervalSeconds, other.PollIntervalSeconds) {
+		return true
+	}
+
+	if c.Timeout != nil && intsDiffer(c.Timeout, other.Timeout) {
+		return true
+	}
+
+	if c.Method != nil && stringsDiffer(c.Method, other.Method) {
+		return true
+	}
+
+	if c.IgnoreSSLErrors != nil && boolsDiffer(c.IgnoreSSLErrors, other.IgnoreSSLErrors) {
+		return true
+	}
+
+	if c.MaintenanceMode != nil && boolsDiffer(c.MaintenanceMode, other.MaintenanceMode) {
+		return true
+	}
+
+	if c.Host != nil && stringsDiffer(c.Host, other.Host) {
+		return true
+	}
+
+	if c.Market != nil && c.Market.DiffersFrom(other.Market) {
+		return true
+	}
+
+	if c.RequestContentType != nil && stringsDiffer(c.RequestContentType, other.RequestContentType) {
+		return true
+	}
+
+	if c.ResponseBodyMatch != nil && stringsDiffer(c.ResponseBodyMatch, other.ResponseBodyMatch) {
+		return true
+	}
+
+	if c.ResponseMatchType != nil && stringsDiffer(c.ResponseMatchType, other.ResponseMatchType) {
+		return true
+	}
+
+	return false
+}
+
+// DiffersFrom indicates if any fields in this config (that are non-nil) differ from another
+// config.
+func (c *PlatformCategory) DiffersFrom(other *PlatformCategory) bool {
+	if c == nil {
+		return other == nil
+	}
+
+	if other == nil {
+		return true
+	}
+
+	return *c != *other
+}
+
+// DiffersFrom indicates if any fields in this config (that are non-nil) differ from another
+// config.
+func (m *Market) DiffersFrom(other *Market) bool {
+	if m == nil {
+		return other == nil
+	}
+
+	if other == nil {
+		return true
+	}
+
+	return *m != *other
 }

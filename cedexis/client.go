@@ -59,6 +59,10 @@ func (c *Client) postJSON(url string, send interface{}, recv interface{}) error 
 	return c.doJSON("POST", url, send, recv)
 }
 
+func (c *Client) putJSON(url string, send interface{}, recv interface{}) error {
+	return c.doJSON("PUT", url, send, recv)
+}
+
 func (c *Client) doJSON(method string, url string, send interface{}, recv interface{}) error {
 	toSend := new(bytes.Buffer)
 	if send != nil {
@@ -99,16 +103,16 @@ func (c *Client) doHTTP(method string, url string, toSend io.Reader) (*http.Resp
 	}
 	req.Header.Set("User-Agent", "github.com/ctxkenb/cedexis-golang")
 
-	//dump, err := httputil.DumpRequestOut(req, true)
-	//fmt.Printf("%v\n", string(dump))
+	// dump, err := httputil.DumpRequestOut(req, true)
+	// fmt.Printf("%v\n", string(dump))
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode >= 400 {
-		//		dump, _ := httputil.DumpResponse(resp, true)
-		//		fmt.Printf("%v\n", string(dump))
+		// dump, _ := httputil.DumpResponse(resp, true)
+		// fmt.Printf("%v\n", string(dump))
 		return nil, errorFromHTTPFailure(resp)
 	}
 
