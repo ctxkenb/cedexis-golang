@@ -246,8 +246,8 @@ func (c *Client) CreateZone(name string, description string, tags []string, impo
 }
 
 // GetZones returns all configured zones.
-func (c *Client) GetZones() ([]Zone, error) {
-	var resp []Zone
+func (c *Client) GetZones() ([]*Zone, error) {
+	var resp []*Zone
 	err := c.getJSON(baseURL+dnsConfigPath, &resp)
 
 	if err != nil {
@@ -281,7 +281,7 @@ func (c *Client) GetZoneByName(name string) (*Zone, error) {
 
 	for _, z := range zones {
 		if strings.ToLower(name) == strings.ToLower(*z.DomainName) {
-			return &z, nil
+			return z, nil
 		}
 	}
 

@@ -1,12 +1,13 @@
 package main
 
 import (
+	"regexp"
 	"strconv"
 
 	"github.com/ctxkenb/cedexis-golang/cedexis"
 )
 
-var zones *map[int]cedexis.Zone
+var zones *map[int]*cedexis.Zone
 
 func createZone(name string, description string, tags []string, content *string) error {
 	zones = nil
@@ -14,20 +15,39 @@ func createZone(name string, description string, tags []string, content *string)
 	return err
 }
 
-func getZones() ([]cedexis.Zone, error) {
+func filterZones(zones []*cedexis.Zone, filter string) ([]*cedexis.Zone, error) {
+	if filter == "" {
+		return zones, nil
+	}
+
+	re, err := regexp.Compile(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*cedexis.Zone, 0, len(zones))
+	for _, p := range zones {
+		if re.MatchString(*p.DomainName) {
+			result = append(result, p)
+		}
+	}
+	return result, nil
+}
+
+func getZones() ([]*cedexis.Zone, error) {
 	if zones == nil {
 		newZones, err := cClient.GetZones()
 		if err != nil {
 			return nil, err
 		}
 
-		zones = &map[int]cedexis.Zone{}
+		zones = &map[int]*cedexis.Zone{}
 		for _, v := range newZones {
 			(*zones)[*v.ID] = v
 		}
 	}
 
-	m := make([]cedexis.Zone, 0, len(*zones))
+	m := make([]*cedexis.Zone, 0, len(*zones))
 	for _, val := range *zones {
 		m = append(m, val)
 	}
@@ -42,7 +62,7 @@ func getZone(name string) (*cedexis.Zone, error) {
 
 	for _, z := range allZones {
 		if *(z.DomainName) == name {
-			return &z, nil
+			return z, nil
 		}
 	}
 
@@ -59,7 +79,7 @@ func deleteZone(name string) error {
 	return cClient.DeleteZone(*z.ID)
 }
 
-func zonesToTable(zones []cedexis.Zone) *Table {
+func zonesToTable(zones []*cedexis.Zone) *Table {
 	t := Table{
 		Columns: []string{"Domain", "Records", "Description"},
 		Rows:    make([][]string, len(zones)),

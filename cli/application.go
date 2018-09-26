@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"strconv"
 
 	"github.com/ctxkenb/cedexis-golang/cedexis"
@@ -21,6 +22,25 @@ func createApp(name string, description string, t string, fallbackName string, a
 
 	_, err := cClient.CreateApplication(newApp)
 	return err
+}
+
+func filterApps(apps []*cedexis.Application, filter string) ([]*cedexis.Application, error) {
+	if filter == "" {
+		return apps, nil
+	}
+
+	re, err := regexp.Compile(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*cedexis.Application, 0, len(apps))
+	for _, p := range apps {
+		if re.MatchString(*p.Name) {
+			result = append(result, p)
+		}
+	}
+	return result, nil
 }
 
 func deleteApp(name string) error {
