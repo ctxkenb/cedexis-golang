@@ -182,10 +182,26 @@ func (c *Client) GetPlatforms(t PlatformType) ([]*PlatformInfo, error) {
 	}
 
 	var resp []*PlatformInfo
-	err := c.getJSON(path, &resp)
 
+	// Try cache read
+	if t == PlatformsTypePrivate && len(c.privatePlatformListCache) > 0 {
+		resp = make([]*PlatformInfo, 0, len(c.privatePlatformListCache))
+		for _, p := range c.privatePlatformListCache {
+			resp = append(resp, p)
+		}
+		return resp, nil
+	}
+
+	// Not cached, go to service
+	err := c.getJSON(path, &resp)
 	if err != nil {
 		return nil, err
+	}
+
+	// Cache
+	c.privatePlatformListCache = map[int]*PlatformInfo{}
+	for _, p := range resp {
+		c.privatePlatformListCache[*p.ID] = p
 	}
 
 	return resp, nil
@@ -205,30 +221,56 @@ func (c *Client) GetEnabledPlatforms(tag *string) ([]*PlatformConfig, error) {
 
 // CreatePrivatePlatform creates a new platform
 func (c *Client) CreatePrivatePlatform(spec *PlatformConfig) (*PlatformConfig, error) {
-	var resp PlatformConfig
-	err := c.postJSON(baseURL+platformsConfigPath, spec, &resp)
+	var resp = &PlatformConfig{}
+	err := c.postJSON(baseURL+platformsConfigPath, spec, resp)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &resp, nil
+	c.privatePlatformCache[*resp.ID] = resp
+
+	return resp, nil
 }
 
 // DeletePrivatePlatform removes a platform
 func (c *Client) DeletePrivatePlatform(id int) error {
-	return c.delete(baseURL + platformsConfigPath + "/" + fmt.Sprintf("%d", id))
+	err := c.delete(baseURL + platformsConfigPath + "/" + fmt.Sprintf("%d", id))
+
+	if err != nil {
+		delete(c.privatePlatformCache, id)
+	}
+
+	return err
 }
 
 // UpdatePrivatePlatform updates a platform
 func (c *Client) UpdatePrivatePlatform(spec *PlatformConfig) error {
-	return c.putJSON(baseURL+platformsConfigPath+"/"+fmt.Sprintf("%d", *spec.ID), spec, nil)
+	var resp = &PlatformConfig{}
+	err := c.putJSON(baseURL+platformsConfigPath+"/"+fmt.Sprintf("%d", *spec.ID), spec, resp)
+
+	if err != nil {
+		c.privatePlatformCache[*resp.ID] = resp
+	}
+
+	return err
 }
 
 // GetPrivatePlatform gets a platform by ID
 func (c *Client) GetPrivatePlatform(id int) (*PlatformConfig, error) {
 	var cfg *PlatformConfig
+
+	cfg = c.privatePlatformCache[id]
+	if cfg != nil {
+		return cfg, nil
+	}
+
 	err := c.getJSON(baseURL+platformsConfigPath+"/"+fmt.Sprintf("%d", id), &cfg)
+
+	if err != nil {
+		c.privatePlatformCache[*cfg.ID] = cfg
+	}
+
 	return cfg, err
 }
 

@@ -229,7 +229,7 @@ func (c *Client) CreateZone(name string, description string, tags []string, impo
 	t := true
 	tagsString := strings.Join(tags, ",")
 
-	zone := Zone{
+	zone := &Zone{
 		DomainName:     &name,
 		Description:    &description,
 		Tags:           &tagsString,
@@ -237,21 +237,39 @@ func (c *Client) CreateZone(name string, description string, tags []string, impo
 		IsPrimary:      &t,
 	}
 
-	err := c.postJSON(baseURL+dnsConfigPath, &zone, &zone)
+	err := c.postJSON(baseURL+dnsConfigPath, zone, zone)
 	if err != nil {
 		return nil, err
 	}
 
-	return &zone, nil
+	if len(c.zoneCache) > 0 {
+		c.zoneCache[*zone.ID] = zone
+	}
+
+	return zone, nil
 }
 
 // GetZones returns all configured zones.
 func (c *Client) GetZones() ([]*Zone, error) {
 	var resp []*Zone
-	err := c.getJSON(baseURL+dnsConfigPath, &resp)
 
-	if err != nil {
-		return nil, err
+	if len(c.zoneCache) == 0 {
+		err := c.getJSON(baseURL+dnsConfigPath, &resp)
+
+		if err != nil {
+			return nil, err
+		}
+
+		c.zoneCache = map[int]*Zone{}
+		for _, z := range resp {
+			c.zoneCache[*z.ID] = z
+		}
+
+	} else {
+		resp = make([]*Zone, 0, len(c.zoneCache))
+		for _, z := range c.zoneCache {
+			resp = append(resp, z)
+		}
 	}
 
 	return resp, nil
@@ -259,17 +277,33 @@ func (c *Client) GetZones() ([]*Zone, error) {
 
 // GetZone gets a zone.
 func (c *Client) GetZone(id int) (*Zone, error) {
-	result := Zone{}
-	err := c.getJSON(baseURL+dnsConfigPath+fmt.Sprintf("/%d", id), &result)
+	var result *Zone
+
+	result = c.zoneCache[id]
+	if result != nil {
+		return result, nil
+	}
+
+	result = &Zone{}
+	err := c.getJSON(baseURL+dnsConfigPath+fmt.Sprintf("/%d", id), result)
 	if err != nil {
 		return nil, err
 	}
-	return &result, err
+
+	if len(c.zoneCache) > 0 {
+		c.zoneCache[*result.ID] = result
+	}
+
+	return result, err
 }
 
 // DeleteZone deletes an alert.
 func (c *Client) DeleteZone(id int) error {
-	return c.delete(baseURL + dnsConfigPath + fmt.Sprintf("/%d", id))
+	err := c.delete(baseURL + dnsConfigPath + fmt.Sprintf("/%d", id))
+	if err != nil {
+		delete(c.zoneCache, id)
+	}
+	return err
 }
 
 // GetZoneByName gets a zone by name, returning nil if not found
@@ -295,6 +329,10 @@ func (c *Client) CreateRecord(r *Record) (*Record, error) {
 	err := c.postJSON(baseURL+dnsRecordConfigPath, r, &out)
 	if err != nil {
 		return nil, err
+	}
+
+	if c.zoneCache[*r.DNSZoneID] != nil {
+		c.zoneCache[*r.DNSZoneID].Records = append(c.zoneCache[*r.DNSZoneID].Records, out)
 	}
 
 	return &out, nil
@@ -329,5 +367,14 @@ func (c *Client) UpdateRecord(r *Record) (*Record, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if c.zoneCache[*r.DNSZoneID] != nil {
+		for i, existing := range c.zoneCache[*r.DNSZoneID].Records {
+			if existing.ID == r.ID {
+				c.zoneCache[*r.DNSZoneID].Records[i] = out
+			}
+		}
+	}
+
 	return &out, nil
 }

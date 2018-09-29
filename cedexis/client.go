@@ -31,6 +31,11 @@ type cedexisErrorResponse struct {
 // Client implements a client for the Cedexis API
 type Client struct {
 	httpClient *http.Client
+
+	zoneCache                map[int]*Zone
+	privatePlatformListCache map[int]*PlatformInfo
+	privatePlatformCache     map[int]*PlatformConfig
+	appCache                 map[int]*Application
 }
 
 // NewClient creates a new Cedexis API client
@@ -42,7 +47,11 @@ func NewClient(ctx context.Context, clientID string, clientSecret string) *Clien
 	}
 
 	return &Client{
-		httpClient: config.Client(ctx),
+		httpClient:               config.Client(ctx),
+		zoneCache:                map[int]*Zone{},
+		privatePlatformListCache: map[int]*PlatformInfo{},
+		privatePlatformCache:     map[int]*PlatformConfig{},
+		appCache:                 map[int]*Application{},
 	}
 }
 
