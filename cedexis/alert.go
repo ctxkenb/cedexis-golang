@@ -151,10 +151,9 @@ func ParseAlertTiming(val string) (AlertTiming, error) {
 	}
 }
 
-// CreateAlert creates new alerts.
-func (c *Client) CreateAlert(name string, t AlertType, platform int,
-	change AlertChange, timing AlertTiming, emails []string, minInterval int) error {
-
+// NewAlert creates a new alert object, use CreateAlert to create in Cedexis.
+func (c *Client) NewAlert(name string, t AlertType, platform int,
+	change AlertChange, timing AlertTiming, emails []string, minInterval int) *Alert {
 	atype := t.String()
 	achange := change.String()
 	atiming := timing.String()
@@ -177,7 +176,27 @@ func (c *Client) CreateAlert(name string, t AlertType, platform int,
 		Locations:       &locations,
 	}
 
-	return c.postJSON(baseURL+alertsConfigPath, &alert, nil)
+	return &alert
+}
+
+// CreateAlert creates new alerts.
+func (c *Client) CreateAlert(alert *Alert) (*Alert, error) {
+	out := Alert{}
+	err := c.postJSON(baseURL+alertsConfigPath, &alert, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// UpdateAlert creates new alerts.
+func (c *Client) UpdateAlert(alert *Alert) (*Alert, error) {
+	out := Alert{}
+	err := c.putJSON(baseURL+alertsConfigPath+fmt.Sprintf("/%d", *alert.ID), &alert, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 // GetAlert gets an alert.
@@ -205,4 +224,126 @@ func (c *Client) GetAlerts() ([]*Alert, error) {
 	}
 
 	return resp, nil
+}
+
+// GetAlertByName returns an alert by name.
+func (c *Client) GetAlertByName(name string) (*Alert, error) {
+	alerts, err := c.GetAlerts()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, a := range alerts {
+		if *a.Name == name {
+			return a, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// DiffersFrom indicates if any fields in this config (that are non-nil) differ from another
+// config.
+func (a *Alert) DiffersFrom(other *Alert) bool {
+	if a == nil {
+		return other == nil
+	}
+
+	if a.ID != nil && intsDiffer(a.ID, other.ID) {
+		return true
+	}
+
+	if a.Name != nil && stringsDiffer(a.Name, other.Name) {
+		return true
+	}
+
+	if a.Type != nil && stringsDiffer(a.Type, other.Type) {
+		return true
+	}
+
+	if a.Timing != nil && stringsDiffer(a.Timing, other.Timing) {
+		return true
+	}
+
+	if a.Threshold != nil && intsDiffer(a.Threshold, other.Threshold) {
+		return true
+	}
+
+	if a.Sensitivity != nil && intsDiffer(a.Sensitivity, other.Sensitivity) {
+		return true
+	}
+
+	if a.ProbeType != nil && intsDiffer(a.ProbeType, other.ProbeType) {
+		return true
+	}
+
+	if a.Version != nil && intsDiffer(a.Version, other.Version) {
+		return true
+	}
+
+	if a.Debounce != nil && intsDiffer(a.Debounce, other.Debounce) {
+		return true
+	}
+
+	if a.CompareOperator != nil && stringsDiffer(a.CompareOperator, other.CompareOperator) {
+		return true
+	}
+
+	if a.Enabled != nil && boolsDiffer(a.Enabled, other.Enabled) {
+		return true
+	}
+
+	if a.DisabledMinutes != nil && intsDiffer(a.DisabledMinutes, other.DisabledMinutes) {
+		return true
+	}
+
+	if a.Locations != nil && stringArraysDiffer(a.Locations, other.Locations) {
+		return true
+	}
+
+	if a.Platform != nil && intsDiffer(a.Platform, other.Platform) {
+		return true
+	}
+
+	if a.Emails != nil && stringArraysDiffer(a.Emails, other.Emails) {
+		return true
+	}
+
+	if a.Peers != nil && intArraysDiffer(a.Peers, other.Peers) {
+		return true
+	}
+
+	if a.EventsLast24Hours != nil && intsDiffer(a.EventsLast24Hours, other.EventsLast24Hours) {
+		return true
+	}
+
+	if a.CountryEvents != nil && intArraysDiffer(a.CountryEvents, other.CountryEvents) {
+		return true
+	}
+
+	if a.ASNEvents != nil && intArraysDiffer(a.ASNEvents, other.ASNEvents) {
+		return true
+	}
+
+	if a.RefererURI != nil && stringsDiffer(a.RefererURI, other.RefererURI) {
+		return true
+	}
+
+	if a.Statistic != nil && stringsDiffer(a.Statistic, other.Statistic) {
+		return true
+	}
+
+	if a.DataSource != nil && stringsDiffer(a.DataSource, other.DataSource) {
+		return true
+	}
+
+	if a.AutoFill != nil && intsDiffer(a.AutoFill, other.AutoFill) {
+		return true
+	}
+
+	if a.NotifyChange != nil && stringsDiffer(a.NotifyChange, other.NotifyChange) {
+		return true
+	}
+
+	return false
 }

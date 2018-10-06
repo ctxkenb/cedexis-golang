@@ -44,7 +44,8 @@ func getAlert(name string) (*cedexis.Alert, error) {
 }
 
 func createAlert(name string, t cedexis.AlertType, platform int, change cedexis.AlertChange, timing cedexis.AlertTiming, emails []string, intervalSecs int) error {
-	err := cClient.CreateAlert(name, t, platform, change, timing, emails, intervalSecs)
+	alert := cClient.NewAlert(name, t, platform, change, timing, emails, intervalSecs)
+	_, err := cClient.CreateAlert(alert)
 	if err != nil {
 		return err
 	}
