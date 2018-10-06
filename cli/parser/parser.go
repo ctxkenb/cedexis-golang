@@ -34,8 +34,16 @@ type CommandFrag struct {
 
 // PosArg specifies a positional argument, found immediately after the command itself.
 type PosArg struct {
-	Name    string
-	Desc    string
+	// Name of the argument
+	Name string
+
+	// Desc describes the argument
+	Desc string
+
+	// Opt indicates argument is optional
+	Opt bool
+
+	// Suggest is a function to suggest completions
 	Suggest SuggestFn
 }
 
@@ -75,6 +83,7 @@ func (p *Parser) ParseCommand(str string) (*Command, error) {
 	namedArg := ""
 	possibleArgs := map[string]NamedArg{}
 	handler := HandlerFn(nil)
+	posArgsDone := false
 	for i := range tokens {
 
 		if ptr.Code == 0 {
@@ -96,7 +105,7 @@ func (p *Parser) ParseCommand(str string) (*Command, error) {
 				handler = ptr.Handler
 			}
 
-		} else if len(args) < len(ptr.PosArgs) {
+		} else if len(args) < len(ptr.PosArgs) && !posArgsDone && !(strings.HasPrefix(tokens[i], "-") && ptr.PosArgs[len(args)].Opt) {
 			argName := ptr.PosArgs[len(args)].Name
 
 			// We're still looking for positional args
@@ -111,6 +120,7 @@ func (p *Parser) ParseCommand(str string) (*Command, error) {
 				return nil, fmt.Errorf("Expected '-' looking for named argument, not '%v'", tokens[i])
 			}
 
+			posArgsDone = true
 			namedArg = strings.TrimLeft(tokens[i], "-")
 
 			if _, ok := possibleArgs[namedArg]; !ok {
@@ -127,7 +137,7 @@ func (p *Parser) ParseCommand(str string) (*Command, error) {
 		}
 	}
 
-	if len(args) < len(ptr.PosArgs) {
+	if len(args) < len(ptr.PosArgs) && !posArgsDone {
 		return nil, fmt.Errorf("Command incomplete, expecting positional argument '%v'", ptr.PosArgs[len(args)].Name)
 	}
 
@@ -159,6 +169,7 @@ func (p *Parser) Suggest(str string) []Suggestion {
 	args := map[string]string{}
 	argName := ""
 	possibleArgs := map[string]NamedArg{}
+	posArgsDone := false
 	for i := range tokens {
 		isLast := i == len(tokens)-1
 
@@ -179,7 +190,7 @@ func (p *Parser) Suggest(str string) []Suggestion {
 				possibleArgs[k] = v
 			}
 
-		} else if len(args) < len(ptr.PosArgs) {
+		} else if len(args) < len(ptr.PosArgs) && !posArgsDone && !(strings.HasPrefix(tokens[i], "-") && ptr.PosArgs[len(args)].Opt) {
 			// We're still looking for positional args
 			arg := ptr.PosArgs[len(args)]
 
@@ -195,6 +206,7 @@ func (p *Parser) Suggest(str string) []Suggestion {
 			args[arg.Name] = tokens[i]
 		} else if argName == "" {
 			argName = strings.TrimLeft(tokens[i], "-")
+			posArgsDone = true
 
 			namedArg, ok := possibleArgs[argName]
 			if isLast && !ok {
@@ -236,7 +248,7 @@ func (p *Parser) Suggest(str string) []Suggestion {
 			return cmdSuggestions(ptr.Sub)
 		}
 
-		if len(args) < len(ptr.PosArgs) {
+		if len(args) < len(ptr.PosArgs) && !posArgsDone {
 			arg := ptr.PosArgs[len(args)]
 			return []Suggestion{{Text: "", Description: "<" + arg.Name + "> " + arg.Desc}}
 		}

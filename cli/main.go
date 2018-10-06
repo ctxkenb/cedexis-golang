@@ -220,6 +220,10 @@ func handleList(command *parser.Command) {
 			return
 		}
 
+		if filter, ok := command.Args[argFilter]; ok {
+			alerts, err = filterAlerts(alerts, filter)
+		}
+
 		t = alertsToTable(alerts)
 	case CmdFragApp:
 		apps, err := getApps()
@@ -228,12 +232,20 @@ func handleList(command *parser.Command) {
 			return
 		}
 
+		if filter, ok := command.Args[argFilter]; ok {
+			apps, err = filterApps(apps, filter)
+		}
+
 		t = appsToTable(apps)
 	case CmdFragZone:
 		zones, err := getZones()
 		if err != nil {
 			fmt.Println(err)
 			return
+		}
+
+		if filter, ok := command.Args[argFilter]; ok {
+			zones, err = filterZones(zones, filter)
 		}
 
 		t = zonesToTable(zones)
@@ -297,28 +309,131 @@ func handleShow(command *parser.Command) {
 }
 
 func handleDeletePlatform(command *parser.Command) {
-	err := deletePlatform(command.Args[argName], cedexis.PlatformsTypePrivate)
+	var err error
+	if command.Args[argName] != "" {
+		err = deletePlatform(command.Args[argName], cedexis.PlatformsTypePrivate)
+	} else if command.Args[argFilter] != "" {
+		platforms := getPlatforms(cedexis.PlatformsTypePrivate, nil)
+		platforms, err = filterPlatforms(platforms, command.Args[argFilter])
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		for _, p := range platforms {
+			err = deletePlatform(*p.Name, cedexis.PlatformsTypePrivate)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+		}
+
+	} else {
+		err = fmt.Errorf("No platform specified by name or by filter")
+	}
+
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
 func handleDeleteAlert(command *parser.Command) {
-	err := deleteAlert(command.Args[argName])
+	var err error
+	if command.Args[argName] != "" {
+		err = deleteAlert(command.Args[argName])
+	} else if command.Args[argFilter] != "" {
+		alerts, err := getAlerts()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		alerts, err = filterAlerts(alerts, command.Args[argFilter])
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		for _, p := range alerts {
+			err = deleteAlert(*p.Name)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+		}
+
+	} else {
+		err = fmt.Errorf("No alert specified by name or by filter")
+	}
+
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
 func handleDeleteApplication(command *parser.Command) {
-	err := deleteApp(command.Args[argName])
+	var err error
+	if command.Args[argName] != "" {
+		err = deleteApp(command.Args[argName])
+	} else if command.Args[argFilter] != "" {
+		apps, err := getApps()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		apps, err = filterApps(apps, command.Args[argFilter])
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		for _, p := range apps {
+			err = deleteApp(*p.Name)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+		}
+
+	} else {
+		err = fmt.Errorf("No app specified by name or by filter")
+	}
+
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
 func handleDeleteZone(command *parser.Command) {
-	err := deleteZone(command.Args[argName])
+	var err error
+	if command.Args[argName] != "" {
+		err = deleteZone(command.Args[argName])
+	} else if command.Args[argFilter] != "" {
+		zones, err := getZones()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		zones, err = filterZones(zones, command.Args[argFilter])
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		for _, p := range zones {
+			err = deleteZone(*p.DomainName)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+		}
+
+	} else {
+		err = fmt.Errorf("No app specified by name or by filter")
+	}
+
 	if err != nil {
 		fmt.Println(err)
 	}

@@ -1,6 +1,9 @@
 package cedexis
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 const appsConfigPath = "/config/applications/dns.json"
 
@@ -126,6 +129,14 @@ func platformArraysDiffer(a *[]ApplicationPlatform, b *[]ApplicationPlatform) bo
 	if len(*a) != len(*b) {
 		return true
 	}
+
+	sort.Slice(*a, func(i, j int) bool {
+		return *(*a)[i].Cname < *(*a)[j].Cname
+	})
+
+	sort.Slice(*b, func(i, j int) bool {
+		return *(*b)[i].Cname < *(*b)[j].Cname
+	})
 
 	for i := range *a {
 		bPlatform := (*b)[i]
@@ -299,10 +310,24 @@ func (a *Application) DiffersFrom(other *Application) bool {
 // GetApplications gets all applications.
 func (c *Client) GetApplications() ([]*Application, error) {
 	var resp []*Application
-	err := c.getJSON(baseURL+appsConfigPath, &resp)
 
-	if err != nil {
-		return nil, err
+	if len(c.appCache) == 0 {
+		err := c.getJSON(baseURL+appsConfigPath, &resp)
+
+		if err != nil {
+			return nil, err
+		}
+
+		c.appCache = map[int]*Application{}
+		for _, a := range resp {
+			c.appCache[*a.ID] = a
+		}
+
+	} else {
+		resp = make([]*Application, 0, len(c.appCache))
+		for _, a := range c.appCache {
+			resp = append(resp, a)
+		}
 	}
 
 	return resp, nil
@@ -310,12 +335,24 @@ func (c *Client) GetApplications() ([]*Application, error) {
 
 // GetApplication gets an alert.
 func (c *Client) GetApplication(id int) (*Application, error) {
-	result := Application{}
-	err := c.getJSON(baseURL+appsConfigPath+fmt.Sprintf("/%d", id), &result)
+	var result *Application
+
+	result = c.appCache[id]
+	if result != nil {
+		return result, nil
+	}
+
+	result = &Application{}
+	err := c.getJSON(baseURL+appsConfigPath+fmt.Sprintf("/%d", id), result)
 	if err != nil {
 		return nil, err
 	}
-	return &result, err
+
+	if len(c.appCache) > 0 {
+		c.appCache[*result.ID] = result
+	}
+
+	return result, err
 }
 
 // GetApplicationByName gets an application by name.
@@ -336,25 +373,39 @@ func (c *Client) GetApplicationByName(name string) (*Application, error) {
 
 // CreateApplication creates an application
 func (c *Client) CreateApplication(app *Application) (*Application, error) {
-	out := Application{}
-	err := c.postJSON(baseURL+appsConfigPath, app, &out)
+	out := &Application{}
+	err := c.postJSON(baseURL+appsConfigPath, app, out)
 	if err != nil {
 		return nil, err
 	}
-	return &out, nil
+
+	if len(c.appCache) > 0 {
+		c.appCache[*out.ID] = out
+	}
+
+	return out, nil
 }
 
 // UpdateApplication updates an app.
 func (c *Client) UpdateApplication(app *Application) (*Application, error) {
-	out := Application{}
-	err := c.putJSON(baseURL+appsConfigPath+fmt.Sprintf("/%d", *app.ID), app, &out)
+	out := &Application{}
+	err := c.putJSON(baseURL+appsConfigPath+fmt.Sprintf("/%d", *app.ID), app, out)
 	if err != nil {
 		return nil, err
 	}
-	return &out, nil
+
+	if len(c.appCache) > 0 {
+		c.appCache[*out.ID] = out
+	}
+
+	return out, nil
 }
 
 // DeleteApplication deletes an app.
 func (c *Client) DeleteApplication(id int) error {
-	return c.delete(baseURL + appsConfigPath + fmt.Sprintf("/%d", id))
+	err := c.delete(baseURL + appsConfigPath + fmt.Sprintf("/%d", id))
+	if err != nil {
+		delete(c.appCache, id)
+	}
+	return err
 }

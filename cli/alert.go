@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"strconv"
 
 	"github.com/ctxkenb/cedexis-golang/cedexis"
@@ -52,6 +53,25 @@ func createAlert(name string, t cedexis.AlertType, platform int, change cedexis.
 
 	alerts = nil
 	return nil
+}
+
+func filterAlerts(alerts []*cedexis.Alert, filter string) ([]*cedexis.Alert, error) {
+	if filter == "" {
+		return alerts, nil
+	}
+
+	re, err := regexp.Compile(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*cedexis.Alert, 0, len(alerts))
+	for _, p := range alerts {
+		if re.MatchString(*p.Name) {
+			result = append(result, p)
+		}
+	}
+	return result, nil
 }
 
 func deleteAlert(name string) error {
