@@ -305,7 +305,7 @@ func (a *Alert) DiffersFrom(other *Alert) bool {
 		return true
 	}
 
-	if a.Emails != nil && stringArraysDiffer(a.Emails, other.Emails) {
+	if a.Emails != nil && unsortedStringArraysDiffer(a.Emails, other.Emails) {
 		return true
 	}
 
