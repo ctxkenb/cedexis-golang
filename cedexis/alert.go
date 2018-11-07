@@ -191,12 +191,11 @@ func (c *Client) CreateAlert(alert *Alert) (*Alert, error) {
 
 // UpdateAlert creates new alerts.
 func (c *Client) UpdateAlert(alert *Alert) (*Alert, error) {
-	out := Alert{}
-	err := c.putJSON(baseURL+alertsConfigPath+fmt.Sprintf("/%d", *alert.ID), &alert, &out)
+	err := c.putJSON(baseURL+alertsConfigPath+fmt.Sprintf("/%d", *alert.ID), &alert, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &out, nil
+	return c.GetAlert(*alert.ID)
 }
 
 // GetAlert gets an alert.

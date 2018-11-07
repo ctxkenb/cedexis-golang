@@ -88,14 +88,16 @@ func (c *Client) doJSON(method string, url string, send interface{}, recv interf
 
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
+	if recv != nil {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
 
-	err = json.Unmarshal(body, &recv)
-	if err != nil {
-		return err
+		err = json.Unmarshal(body, &recv)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

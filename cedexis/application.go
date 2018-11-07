@@ -388,13 +388,14 @@ func (c *Client) CreateApplication(app *Application) (*Application, error) {
 
 // UpdateApplication updates an app.
 func (c *Client) UpdateApplication(app *Application) (*Application, error) {
-	out := &Application{}
-	err := c.putJSON(baseURL+appsConfigPath+fmt.Sprintf("/%d", *app.ID), app, out)
+	err := c.putJSON(baseURL+appsConfigPath+fmt.Sprintf("/%d", *app.ID), app, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(c.appCache) > 0 {
+	out := &Application{}
+	err = c.getJSON(baseURL+appsConfigPath+fmt.Sprintf("/%d", *app.ID), out)
+	if err != nil && len(c.appCache) > 0 {
 		c.appCache[*out.ID] = out
 	}
 

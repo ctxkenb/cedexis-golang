@@ -338,6 +338,17 @@ func (c *Client) CreateRecord(r *Record) (*Record, error) {
 	return &out, nil
 }
 
+// GetRecord gets a DNS record
+func (c *Client) GetRecord(id int) (*Record, error) {
+	out := Record{}
+	err := c.getJSON(baseURL+dnsRecordConfigPath+fmt.Sprintf("/%d", id), &out)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}
+
 // GetRecordByName gets a DNS record
 func (c *Client) GetRecordByName(zone string, name string, rtype string) (*Record, error) {
 	z, err := c.GetZoneByName(zone)
@@ -362,19 +373,21 @@ func (c *Client) GetRecordByName(zone string, name string, rtype string) (*Recor
 
 // UpdateRecord updates a record
 func (c *Client) UpdateRecord(r *Record) (*Record, error) {
-	out := Record{}
-	err := c.putJSON(baseURL+dnsRecordConfigPath+fmt.Sprintf("/%d", *r.ID), r, &out)
+	err := c.putJSON(baseURL+dnsRecordConfigPath+fmt.Sprintf("/%d", *r.ID), r, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if c.zoneCache[*r.DNSZoneID] != nil {
-		for i, existing := range c.zoneCache[*r.DNSZoneID].Records {
-			if existing.ID == r.ID {
-				c.zoneCache[*r.DNSZoneID].Records[i] = out
+	out, err := c.GetRecord(*r.ID)
+	if err == nil {
+		if c.zoneCache[*r.DNSZoneID] != nil {
+			for i, existing := range c.zoneCache[*r.DNSZoneID].Records {
+				if existing.ID == r.ID {
+					c.zoneCache[*r.DNSZoneID].Records[i] = *out
+				}
 			}
 		}
 	}
 
-	return &out, nil
+	return out, err
 }
