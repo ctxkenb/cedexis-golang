@@ -5,9 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -73,15 +73,16 @@ func (c *Client) putJSON(url string, send interface{}, recv interface{}) error {
 }
 
 func (c *Client) doJSON(method string, url string, send interface{}, recv interface{}) error {
-	toSend := new(bytes.Buffer)
+	data := []byte{}
+	var err error
 	if send != nil {
-		err := json.NewEncoder(toSend).Encode(send)
+		data, err = json.Marshal(send)
 		if err != nil {
 			return err
 		}
 	}
 
-	resp, err := c.doHTTP(method, url, toSend)
+	resp, err := c.doHTTP(method, url, data)
 	if err != nil {
 		return err
 	}
@@ -103,31 +104,41 @@ func (c *Client) doJSON(method string, url string, send interface{}, recv interf
 	return nil
 }
 
-func (c *Client) doHTTP(method string, url string, toSend io.Reader) (*http.Response, error) {
-	req, err := http.NewRequest(method, url, toSend)
-	if err != nil {
-		return nil, err
-	}
+func (c *Client) doHTTP(method string, url string, toSend []byte) (*http.Response, error) {
+	delay := time.Duration(1)
 
-	if toSend != nil {
-		req.Header.Set("Content-Type", "application/json; charset=utf-8")
-	}
-	req.Header.Set("User-Agent", "github.com/ctxkenb/cedexis-golang")
+	for {
+		req, err := http.NewRequest(method, url, bytes.NewReader(toSend))
+		if err != nil {
+			return nil, err
+		}
 
-	// dump, err := httputil.DumpRequestOut(req, true)
-	// fmt.Printf("%v\n", string(dump))
+		if toSend != nil {
+			req.Header.Set("Content-Type", "application/json; charset=utf-8")
+		}
+		req.Header.Set("User-Agent", "github.com/ctxkenb/cedexis-golang")
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode >= 400 {
-		// dump, _ := httputil.DumpResponse(resp, true)
+		// dump, err := httputil.DumpRequestOut(req, true)
 		// fmt.Printf("%v\n", string(dump))
-		return nil, errorFromHTTPFailure(resp)
-	}
 
-	return resp, nil
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode == 429 {
+			fmt.Printf("Rate Limited, sleeping for %v\n", delay*time.Second)
+			time.Sleep(delay * time.Second)
+			delay = delay << 1
+			continue
+		}
+		if resp.StatusCode >= 400 {
+			// dump, _ := httputil.DumpResponse(resp, true)
+			// fmt.Printf("%v\n", string(dump))
+			return nil, errorFromHTTPFailure(resp)
+		}
+
+		return resp, nil
+	}
 }
 
 func errorFromHTTPFailure(resp *http.Response) error {
