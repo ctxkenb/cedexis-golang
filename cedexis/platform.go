@@ -230,6 +230,7 @@ func (c *Client) CreatePrivatePlatform(spec *PlatformConfig) (*PlatformConfig, e
 	}
 
 	c.privatePlatformCache[*resp.ID] = resp
+	c.privatePlatformListCache = map[int]*PlatformInfo{}
 
 	return resp, nil
 }
@@ -240,6 +241,7 @@ func (c *Client) DeletePrivatePlatform(id int) error {
 
 	if err != nil {
 		delete(c.privatePlatformCache, id)
+		c.privatePlatformListCache = map[int]*PlatformInfo{}
 	}
 
 	return err
@@ -250,7 +252,7 @@ func (c *Client) UpdatePrivatePlatform(spec *PlatformConfig) error {
 	var resp = &PlatformConfig{}
 	err := c.putJSON(baseURL+platformsConfigPath+"/"+fmt.Sprintf("%d", *spec.ID), spec, resp)
 
-	if err != nil {
+	if err == nil {
 		c.privatePlatformCache[*resp.ID] = resp
 	}
 
