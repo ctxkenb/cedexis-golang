@@ -36,6 +36,7 @@ type Client struct {
 	privatePlatformListCache map[int]*PlatformInfo
 	privatePlatformCache     map[int]*PlatformConfig
 	appCache                 map[int]*Application
+	countriesCache           map[int]*Country
 }
 
 // NewClient creates a new Cedexis API client
