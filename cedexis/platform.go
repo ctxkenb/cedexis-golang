@@ -357,6 +357,10 @@ func (c *PlatformConfig) DiffersFrom(other *PlatformConfig) bool {
 		return true
 	}
 
+	if c.OpenmixEnabled != nil && boolsDiffer(c.OpenmixEnabled, other.OpenmixEnabled) {
+		return true
+	}
+
 	if c.OpenmixVisible != nil && boolsDiffer(c.OpenmixVisible, other.OpenmixVisible) {
 		return true
 	}
