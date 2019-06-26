@@ -338,6 +338,51 @@ func NewPublicCloudPrivatePlatform(
 	}
 }
 
+//
+// NewPrivatePlatform simplifies creating a ConfiguredPlatform instance when the platform is private.
+//
+// The parameters are defined as follows:
+//     name        Unique identifier for the platform (no spaces)
+//     displayName Unique friendly name for the platform (may have spaces)
+//     description Description of the new platform
+//     tags        Tags to apply to the new platform
+//
+func NewPrivatePlatform(
+	name string,
+	displayName string,
+	description string,
+	tags []string) *PlatformConfig {
+
+	platformid := PlatformCategoryManagedDNS
+	openmixEnabled := true
+	radarCacheBursting := true
+	radarMajorNetworksOnly := true
+	radarUsePublicData := false
+	sonarMethod := "GET"
+	sonarPollIntervalSeconds := 60
+	publicArchetype := 0
+
+	return &PlatformConfig{
+		Category:    &NameID{ID: &platformid},
+		OpenmixEnabled: &openmixEnabled,
+		DisplayName: &displayName,
+		IntendedUse: &description,
+		Name:        &name,
+		PublicProviderArchetypeID: &publicArchetype,
+		RadarConfig: &RadarConfig{
+			CacheBursting:     &radarCacheBursting,
+			MajorNetworksOnly: &radarMajorNetworksOnly,
+			UsePublicData:     &radarUsePublicData,
+		},
+		SonarConfig: &SonarConfig{
+			Method:              &sonarMethod,
+			PollIntervalSeconds: &sonarPollIntervalSeconds,
+		},
+		Tags: &tags,
+	}
+}
+
+
 // DiffersFrom indicates if any fields in this config (that are non-nil) differ from another
 // config.
 func (c *PlatformConfig) DiffersFrom(other *PlatformConfig) bool {
