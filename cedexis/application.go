@@ -87,14 +87,22 @@ func NewApplication(name string, description string, appType string, fallbackNam
 // DiffersFrom determines if fields in this application differ from the other application
 func (h *Handicap) DiffersFrom(other *Handicap) bool {
 	if h == nil {
-		return other == nil
+		return other != nil
 	}
 
-	if h.Handicap != nil && intsDiffer(h.Handicap, other.Handicap) {
+	if other == nil {
 		return true
 	}
 
-	if h.Enabled != nil && boolsDiffer(h.Enabled, other.Enabled) {
+	if h.Handicap == nil {
+		return other.Handicap != nil
+	}
+
+	if intsDiffer(h.Handicap, other.Handicap) {
+		return true
+	}
+
+	if boolsDiffer(h.Enabled, other.Enabled) {
 		return true
 	}
 
