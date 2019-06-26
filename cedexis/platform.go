@@ -76,6 +76,7 @@ type PlatformConfig struct {
 	Created                     *string             `json:"created,omitempty"`
 	DisplayName                 *string             `json:"displayName,omitempty"`
 	FusionCustomConfig          *FusionCustomConfig `json:"fusionCustomConfig,omitempty"`
+	OpenmixEnabled				*bool  				`json:"openmixEnabled,omitempty"`
 	OpenmixVisible              *bool               `json:"openmixVisible,omitempty"`
 	PublicChartEnabled          *bool               `json:"publicChartEnabled,omitempty"`
 	RadarConfig                 *RadarConfig        `json:"radarConfig,omitempty"`
@@ -310,6 +311,7 @@ func NewPublicCloudPrivatePlatform(
 	tags []string) *PlatformConfig {
 
 	platformid := PlatformCategoryCloudComputing
+	openmixEnabled := true
 	radarCacheBursting := true
 	radarMajorNetworksOnly := true
 	radarUsePublicData := true
@@ -318,6 +320,7 @@ func NewPublicCloudPrivatePlatform(
 
 	return &PlatformConfig{
 		Category:    &NameID{ID: &platformid},
+		OpenmixEnabled: &openmixEnabled,
 		DisplayName: &displayName,
 		IntendedUse: &description,
 		Name:        &name,
