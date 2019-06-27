@@ -24,6 +24,7 @@ const (
 type Handicap struct {
 	Handicap *int  `json:"handicap,omitempty"`
 	Enabled  *bool `json:"enabled,omitempty"`
+	Priority *int  `json:"priority,omitempty"`
 }
 
 // ApplicationGeo represents geo restrictions against a platform for an app
@@ -94,15 +95,15 @@ func (h *Handicap) DiffersFrom(other *Handicap) bool {
 		return true
 	}
 
-	if h.Handicap == nil {
-		return other.Handicap != nil
-	}
-
-	if intsDiffer(h.Handicap, other.Handicap) {
+	if h.Handicap != nil && intsDiffer(h.Handicap, other.Handicap) {
 		return true
 	}
 
-	if boolsDiffer(h.Enabled, other.Enabled) {
+	if h.Enabled != nil && boolsDiffer(h.Enabled, other.Enabled) {
+		return true
+	}
+
+	if h.Priority != nil && intsDiffer(h.Priority, other.Priority) {
 		return true
 	}
 
