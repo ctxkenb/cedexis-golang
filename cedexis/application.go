@@ -280,7 +280,8 @@ func (a *Application) DiffersFrom(other *Application) bool {
 		return true
 	}
 
-	if a.UseRadarAvailability != nil && boolsDiffer(a.UseRadarAvailability, other.UseRadarAvailability) {
+	// Special-case ITM doesn't seem to round-trip 'false'
+	if a.UseRadarAvailability != nil && other.UseRadarAvailability != nil && boolsDiffer(a.UseRadarAvailability, other.UseRadarAvailability) {
 		return true
 	}
 
